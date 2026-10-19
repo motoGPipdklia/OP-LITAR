@@ -1440,18 +1440,57 @@ if (!semakPerananPentadbir(profil)) {
 }
 
 async function logout() {
-  await db?.auth?.signOut().catch(() => {});
-  localStorage.removeItem(KUNCI_ADMIN_F1);
+  /* FIX 007 — LOG KELUAR PENTADBIR
+     Tutup dashboard serta-merta dan pulangkan paparan ke login.
+     class admin-authenticated WAJIB dibuang supaya CSS tidak terus
+     memaksa dashboard dipaparkan selepas logout.
+  */
+  const dashboard = el("dashboard");
+  const loginPage = el("loginPage");
+
   adminLogin = null;
   dataDashboard = [];
   dataPaparan = [];
+  localStorage.removeItem(KUNCI_ADMIN_F1);
 
-  el("dashboard").style.display = "none";
-  el("loginPage").style.display = "flex";
-  el("noBadan").value = "";
-  el("password").value = "";
-  el("loginStatus").innerHTML = "";
-  el("noBadan").focus();
+  if (dashboard) {
+    dashboard.classList.remove("admin-authenticated");
+    dashboard.classList.add("hidden");
+    dashboard.style.display = "none";
+  }
+
+  if (loginPage) {
+    loginPage.classList.remove("hidden");
+    loginPage.style.display = "flex";
+  }
+
+  if (el("noBadan")) el("noBadan").value = "";
+  if (el("password")) el("password").value = "";
+  if (el("loginStatus")) {
+    el("loginStatus").innerHTML = "";
+    el("loginStatus").className = "";
+  }
+
+  /* Tamatkan sesi Supabase selepas UI dikunci. */
+  try {
+    if (db?.auth?.signOut) {
+      await denganHadMasa(db.auth.signOut(), 8000);
+    }
+  } catch (error) {
+    console.warn("Log keluar Supabase:", error);
+  } finally {
+    /* Pastikan keadaan akhir sentiasa LOGIN walaupun signOut gagal/rangkaian perlahan. */
+    if (dashboard) {
+      dashboard.classList.remove("admin-authenticated");
+      dashboard.classList.add("hidden");
+      dashboard.style.display = "none";
+    }
+    if (loginPage) {
+      loginPage.classList.remove("hidden");
+      loginPage.style.display = "flex";
+    }
+    el("noBadan")?.focus();
+  }
 }
 
 /* ================================================================
