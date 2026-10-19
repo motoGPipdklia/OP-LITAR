@@ -1148,3 +1148,26 @@ body:has(#loginBox:not(.hidden)) #loginBox .login-logo{
     border-radius:16px;
   }
 }
+
+/* =========================================================
+   OP LITAR INDEX FIX 003 - BACKGROUND LOGIN FULL SCREEN
+   Buang ruang/kotak hitam di atas kad. Background asal kekal
+   dan memenuhi keseluruhan viewport semasa halaman login.
+========================================================= */
+body:has(#loginBox:not(.hidden)){
+  min-height:100vh !important;
+  background:
+    linear-gradient(rgba(0,0,0,.58),rgba(0,0,0,.58)),
+    url("../images/background.jpg") center center / cover no-repeat fixed !important;
+  background-color:#05080b !important;
+}
+
+body:has(#loginBox:not(.hidden)) #loginBox{
+  margin:clamp(28px,5vh,56px) auto 36px !important;
+}
+
+@media(max-width:700px){
+  body:has(#loginBox:not(.hidden)) #loginBox{
+    margin:22px auto 28px !important;
+  }
+}
