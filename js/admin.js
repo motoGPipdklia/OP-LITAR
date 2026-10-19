@@ -10622,8 +10622,6 @@ function paparCartaKenderaanPentadbir() {
   paparCartaKenderaanLokasiPentadbir();
 
   paparButiranKenderaanPentadbir();
-
-  jadualResizeCartaKenderaanPentadbir();
 }
 
 
@@ -15581,7 +15579,22 @@ function toggleMenuPentadbir(paksaBuka = null) {
 document.addEventListener("keydown", function (event) {
   if (event.key === "Escape") toggleMenuPentadbir(false);
 });
-/* FIX AUTO RESIZE CARTA KENDERAAN */
-function jadualResizeCartaKenderaanPentadbir(){const resize=()=>{try{cartaKenderaanPentadbir?.resize()}catch(_){}try{cartaKenderaanLokasiPentadbir?.resize()}catch(_){}};requestAnimationFrame(()=>requestAnimationFrame(resize));setTimeout(resize,120);setTimeout(resize,350)}
-window.addEventListener("load",jadualResizeCartaKenderaanPentadbir);window.addEventListener("resize",jadualResizeCartaKenderaanPentadbir);
-document.addEventListener("DOMContentLoaded",()=>{const kad=document.querySelector('.admin-chart-card[data-chart-section="KENDERAAN"]');if(kad&&"ResizeObserver" in window){const ro=new ResizeObserver(jadualResizeCartaKenderaanPentadbir);ro.observe(kad)}});
+/* FIX 20261019-002 — paksa Chart.js kira lebar selepas modul CARTA sudah visible. */
+function paksaResizeCartaKenderaanPentadbir() {
+  const buatResize = () => {
+    try { if (cartaKenderaanPentadbir) cartaKenderaanPentadbir.resize(); } catch (_) {}
+    try { if (cartaKenderaanLokasiPentadbir) cartaKenderaanLokasiPentadbir.resize(); } catch (_) {}
+  };
+  requestAnimationFrame(() => requestAnimationFrame(buatResize));
+  setTimeout(buatResize, 80);
+  setTimeout(buatResize, 220);
+  setTimeout(buatResize, 500);
+}
+
+window.addEventListener("resize", paksaResizeCartaKenderaanPentadbir);
+window.addEventListener("load", paksaResizeCartaKenderaanPentadbir);
+
+document.addEventListener("click", (event) => {
+  const btn = event.target.closest("#btnBukaCartaPentadbir, [onclick*='bukaModulCartaPentadbir']");
+  if (btn) paksaResizeCartaKenderaanPentadbir();
+});
