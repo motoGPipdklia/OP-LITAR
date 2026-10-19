@@ -461,7 +461,7 @@ function cetakCartaPentadbir(
 
     <body>
       <header class="print-report-header">
-        <h1>OP LITAR FORMULA 1 2026</h1>
+        <h1>OP LITAR</h1>
         <h2>${escapeHtml(maklumat.tajuk)}</h2>
         <p>TARIKH: ${escapeHtml(maklumat.tarikh)}</p>
       </header>
@@ -2238,7 +2238,7 @@ function muatTurunTemplatPengguna() {
     "NO_BADAN,PANGKAT,NAMA,NO_TELEFON,PERANAN,BAHAGIAN,DAERAH,KATA_LALUAN,AKTIF",
     "197898,L/KPL,NORHISHAM BIN CHE MAT,0193151615,PETUGAS,BKDNKA,SEPANG,Skpo@A7m2#1,YA",
     "199898,SJN,AHMAD BIN ALI,0123456789,PENYELIA,CAWANGAN KHAS,SEPANG,Skpo@B9n4#2,YA",
-    "PUSATF1,INSP,PUSAT KAWALAN FORMULA 1,0123456789,PUSAT_KAWALAN,IPK,SELANGOR,Skpo@F1PK2026#1,YA"
+    "PUSATF1,INSP,PUSAT KAWALAN OP LITAR,0123456789,PUSAT_KAWALAN,IPK,SELANGOR,Skpo@F1PK2026#1,YA"
   ].join("\r\n");
 
   const blob = new Blob(["\uFEFF", kandungan], { type: "text/csv;charset=utf-8" });
@@ -5102,7 +5102,7 @@ function paparPreviewPenugasanAuto() {
               &nbsp;•&nbsp;
               ${escapeHtml(formatTarikhMalaysia(item.tarikh))}
               &nbsp;•&nbsp;
-              FORMULA 1
+              OP LITAR
             </td>
           </tr>
         `;
@@ -5521,7 +5521,7 @@ function cetakJadualPenugasanAuto() {
 
     <body>
       <header class="header">
-        <h1>OP LITAR FORMULA 1 2026</h1>
+        <h1>OP LITAR</h1>
         <h2>JADUAL PENUGASAN PETUGAS</h2>
       </header>
 
@@ -5744,7 +5744,7 @@ async function simpanPenugasanAuto() {
     previewPenugasanAuto.length;
 
   if (!confirm(
-    `Simpan ${jumlah} rekod penugasan FORMULA 1 ke Supabase?\n\n` +
+    `Simpan ${jumlah} rekod penugasan OP LITAR ke Supabase?\n\n` +
     `Jika No Badan dan tarikh yang sama sudah wujud, ` +
     `rekod tersebut akan dikemas kini oleh sistem import sedia ada.`
   )) {
@@ -6881,7 +6881,7 @@ function bukaCetakanAdmin(tajuk, kandungan) {
       @media print{button{display:none}}
     </style></head><body>
     <h1>${escapeHtml(tajuk)}</h1>
-    <p class="subtitle">SKPO FORMULA 1</p>
+    <p class="subtitle">SKPO OP LITAR</p>
     ${kandungan}
     <script>window.onload=()=>setTimeout(()=>window.print(),250);<\/script>
     </body></html>`);
@@ -14201,7 +14201,7 @@ async function janaLaporanKeseluruhanHarian() {
 
     kandungan.innerHTML = `
       <div class="laporan-harian-kepala" style="text-align:center;margin-bottom:16px;">
-        <h2 style="margin:0;">OP LITAR FORMULA 1 2026</h2>
+        <h2 style="margin:0;">OP LITAR</h2>
         <h3 style="margin:6px 0;">LAPORAN KESELURUHAN HARIAN</h3>
         <div class="muted">TARIKH: ${escapeHtml(formatTarikhMalaysia(tarikh))}</div>
       </div>
@@ -15532,7 +15532,7 @@ function cetakPassKenderaanPentadbir() {
   const tarikh=el("tarikhPassKenderaanAdmin")?.value||hariIniMalaysia();
   const isi=rows.map((r,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(formatTarikhMalaysia(r.tarikh_penugasan))}</td><td>${escapeHtml(r.no_badan||"-")}</td><td>${escapeHtml(r.pangkat||"-")}</td><td>${escapeHtml(r.nama||"-")}</td><td>${escapeHtml(r.no_siri_pass||"-")}</td><td>${escapeHtml(r.no_kenderaan||"-")}</td></tr>`).join("");
   const w=window.open("","_blank","width=1200,height=800"); if(!w) return alert("Benarkan pop-up untuk mencetak.");
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>PASS & Kenderaan</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Arial;color:#111}h1,h2,p{text-align:center;margin:4px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #555;padding:7px;font-size:11px;text-align:center}th{background:#eee}</style></head><body><h1>OP LITAR FORMULA 1 2026</h1><h2>REKOD PASS & KENDERAAN PETUGAS</h2><p>TARIKH PENUGASAN: ${escapeHtml(formatTarikhMalaysia(tarikh))}</p><table><thead><tr><th>BIL</th><th>TARIKH PENUGASAN</th><th>NO BADAN</th><th>PANGKAT</th><th>NAMA</th><th>NO SIRI PASS</th><th>NO KENDERAAN</th></tr></thead><tbody>${isi}</tbody></table><p style="text-align:left;margin-top:10px"><strong>JUMLAH REKOD: ${rows.length}</strong></p><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`); w.document.close();
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>PASS & Kenderaan</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Arial;color:#111}h1,h2,p{text-align:center;margin:4px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #555;padding:7px;font-size:11px;text-align:center}th{background:#eee}</style></head><body><h1>OP LITAR</h1><h2>REKOD PASS & KENDERAAN PETUGAS</h2><p>TARIKH PENUGASAN: ${escapeHtml(formatTarikhMalaysia(tarikh))}</p><table><thead><tr><th>BIL</th><th>TARIKH PENUGASAN</th><th>NO BADAN</th><th>PANGKAT</th><th>NAMA</th><th>NO SIRI PASS</th><th>NO KENDERAAN</th></tr></thead><tbody>${isi}</tbody></table><p style="text-align:left;margin-top:10px"><strong>JUMLAH REKOD: ${rows.length}</strong></p><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`); w.document.close();
 }
 function csvSelamat(v){const s=String(v??"");return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;}
 function muatTurunCsvPassKenderaanPentadbir() {
