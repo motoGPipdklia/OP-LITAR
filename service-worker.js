@@ -1,4 +1,4 @@
-const CACHE_NAME = "skpo-op-litar-20261019-print-view-003";
+const CACHE_NAME = "skpo-op-litar-20261019-pdf-view-print-004";
 
 const APP_SHELL = [
   "./",

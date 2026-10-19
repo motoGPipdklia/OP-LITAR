@@ -1,10 +1,11 @@
-OP LITAR FIX 003 — PRINT SAMA SEPERTI VIEW
+OP LITAR FIX 004
 
-Gantikan:
+Ganti:
 /admin.html
 /js/admin.js
 /service-worker.js
 
-FIX: CETAK kini mengambil snapshot terus daripada paparan komputer dan memotong snapshot secara seragam kepada halaman A4 landscape. Tiada re-layout khas print.
+MUAT TURUN PDF = satu halaman PDF panjang sama seperti VIEW komputer.
+CETAK = A4 Landscape, satu carta/bahagian utama setiap halaman.
 
-Selepas deploy: Ctrl+Shift+R sekali, jana Laporan Keseluruhan, kemudian CETAK. Chrome: Pages per sheet 1, Background graphics ON, Scale Default/100%.
+Selepas GitHub Pages deploy, Ctrl+Shift+R sekali.
