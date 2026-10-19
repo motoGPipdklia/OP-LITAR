@@ -825,28 +825,23 @@ async function panggilEdgeFunction(namaFungsi, body, masaTamat = 25000) {
   return data || {};
 }
 
-async function dapatkanProfil(userId) {
-  let hasil = await denganHadMasa(
-    db.from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .maybeSingle()
-  );
+async function dapatkanProfil(userId, noBadan = "") {
+  let hasil = await denganHadMasa(db.from("profiles").select("*").eq("id", userId).maybeSingle());
+  if (!hasil.error && hasil.data) return hasil.data;
 
-  if (
-    hasil.error &&
-    /auth_user_id|column.*id|does not exist/i.test(hasil.error.message || "")
-  ) {
-    hasil = await denganHadMasa(
-      db.from("profiles")
-        .select("*")
-        .eq("auth_user_id", userId)
-        .maybeSingle()
-    );
+  const hasilAuth = await denganHadMasa(db.from("profiles").select("*").eq("auth_user_id", userId).maybeSingle());
+  if (!hasilAuth.error && hasilAuth.data) return hasilAuth.data;
+
+  const noBadanBersih = atas(noBadan);
+  if (noBadanBersih) {
+    const hasilNoBadan = await denganHadMasa(db.from("profiles").select("*").ilike("no_badan", noBadanBersih).maybeSingle());
+    if (!hasilNoBadan.error && hasilNoBadan.data) return hasilNoBadan.data;
+    if (hasilNoBadan.error) throw hasilNoBadan.error;
   }
 
+  if (hasilAuth.error) throw hasilAuth.error;
   if (hasil.error) throw hasil.error;
-  return hasil.data;
+  return null;
 }
 
 function semakPerananPentadbir(profil) {
@@ -1317,7 +1312,7 @@ async function login() {
       );
     }
 
-    const profil = await dapatkanProfil(data.user.id);
+    const profil = await dapatkanProfil(data.user.id, noBadan);
 
     if (!profil) {
       throw new Error(
@@ -15552,6 +15547,9 @@ function muatTurunCsvPassKenderaanPentadbir() {
   const blob=new Blob(["\ufeff"+[kepala.join(","),...baris].join("\r\n")],{type:"text/csv;charset=utf-8;"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`PASS_KENDERAAN_${el("tarikhPassKenderaanAdmin")?.value||hariIniMalaysia()}.csv`; document.body.appendChild(a); a.click(); URL.revokeObjectURL(a.href); a.remove();
 }
+
+window.login = login;
+window.logout = logout;
 
 document.addEventListener("DOMContentLoaded", () => {
   sediakanJanaPenugasanAuto();
