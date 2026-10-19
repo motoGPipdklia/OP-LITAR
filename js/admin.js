@@ -9880,72 +9880,60 @@ function lokasiLaporanKenderaanPentadbir(item) {
 
 
 function ringkasanKenderaanMengikutLokasiPentadbir() {
-  const kumpulan =
-    new Map();
+  const kumpulan = new Map();
 
   senaraiKenderaanCartaPentadbir()
     .forEach(item => {
       const lokasi =
-        lokasiLaporanKenderaanPentadbir(
-          item
-        );
-
-      const jumlah =
-        jumlahKeseluruhanKenderaanLaporanPentadbir(
-          item
-        );
+        lokasiLaporanKenderaanPentadbir(item);
 
       const bas =
-        nilaiKenderaanDaripadaLaporanPentadbir(
-          item,
-          "BAS"
-        );
-
-      const motosikal =
-        nilaiKenderaanDaripadaLaporanPentadbir(
-          item,
-          "MOTOSIKAL"
-        );
+        nilaiKenderaanDaripadaLaporanPentadbir(item, "BAS");
 
       const motokar =
-        nilaiKenderaanDaripadaLaporanPentadbir(
-          item,
-          "MOTOKAR"
-        );
+        nilaiKenderaanDaripadaLaporanPentadbir(item, "MOTOKAR");
+
+      const motosikal =
+        nilaiKenderaanDaripadaLaporanPentadbir(item, "MOTOSIKAL");
+
+      const jumlah =
+        jumlahKeseluruhanKenderaanLaporanPentadbir(item);
 
       const sediaAda =
         kumpulan.get(lokasi) || {
           lokasi,
-          jumlah: 0,
           bas: 0,
-          motosikal: 0,
           motokar: 0,
+          motosikal: 0,
+          jumlah: 0,
           bilLaporan: 0
         };
 
-      sediaAda.jumlah += jumlah;
-      sediaAda.bas += bas;
-      sediaAda.motosikal += motosikal;
-      sediaAda.motokar += motokar;
-      sediaAda.bilLaporan += 1;
+      /*
+        Hanya rekod KENDERAAN DATANG (+) dipaparkan.
+        Pecahan BAS, MOTOKAR dan MOTOSIKAL dikekalkan.
+        Rekod keluar (-) masih kekal dalam data tetapi
+        tidak dimasukkan ke carta KENDERAAN MENGIKUT LOKASI.
+      */
+      if (jumlah >= 0) {
+        sediaAda.bas += Math.max(0, bas);
+        sediaAda.motokar += Math.max(0, motokar);
+        sediaAda.motosikal += Math.max(0, motosikal);
+        sediaAda.jumlah += Math.max(0, bas) +
+                           Math.max(0, motokar) +
+                           Math.max(0, motosikal);
+      }
 
-      kumpulan.set(
-        lokasi,
-        sediaAda
-      );
+      sediaAda.bilLaporan += 1;
+      kumpulan.set(lokasi, sediaAda);
     });
 
   return Array
-    .from(
-      kumpulan.values()
-    )
+    .from(kumpulan.values())
     .sort(
       (a, b) =>
         b.jumlah - a.jumlah ||
-        a.lokasi.localeCompare(
-          b.lokasi,
-          "ms"
-        )
+        a.lokasi.localeCompare(b.lokasi, "ms")
     );
 }
 
@@ -10293,43 +10281,29 @@ function paparCartaKenderaanLokasiPentadbir() {
     ringkasanKenderaanMengikutLokasiPentadbir();
 
   const labels =
-    ringkasan.map(
-      item => item.lokasi
-    );
+    ringkasan.map(item => item.lokasi);
 
   const dataBas =
-    ringkasan.map(
-      item => item.bas
-    );
+    ringkasan.map(item => item.bas);
 
   const dataMotokar =
-    ringkasan.map(
-      item => item.motokar
-    );
+    ringkasan.map(item => item.motokar);
 
   const dataMotosikal =
-    ringkasan.map(
-      item => item.motosikal
-    );
+    ringkasan.map(item => item.motosikal);
 
-  const jumlahKeseluruhan =
-    ringkasan.reduce(
-      (jumlah, item) =>
-        jumlah + item.jumlah,
-      0
-    );
+  // Buang paparan JUMLAH KESELURUHAN seperti carta pengunjung.
+  const jumlahBox =
+    el("jumlahKeseluruhanKenderaanLokasiPentadbir");
 
-  if (
-    el(
-      "jumlahKeseluruhanKenderaanLokasiPentadbir"
-    )
-  ) {
-    el(
-      "jumlahKeseluruhanKenderaanLokasiPentadbir"
-    ).textContent =
-      jumlahKeseluruhan.toLocaleString(
-        "ms-MY"
-      );
+  if (jumlahBox) {
+    const kotakJumlah =
+      jumlahBox.closest(".admin-chart-location-total") ||
+      jumlahBox.parentElement;
+
+    if (kotakJumlah) {
+      kotakJumlah.style.display = "none";
+    }
   }
 
   kemusnahkanCartaPentadbir(
@@ -10347,21 +10321,21 @@ function paparCartaKenderaanLokasiPentadbir() {
 
           datasets: [
             {
-              label: "Bas",
+              label: "BAS",
               data: dataBas,
               borderWidth: 2,
               borderRadius: 5,
               borderSkipped: false
             },
             {
-              label: "Motokar",
+              label: "MOTOKAR",
               data: dataMotokar,
               borderWidth: 2,
               borderRadius: 5,
               borderSkipped: false
             },
             {
-              label: "Motosikal",
+              label: "MOTOSIKAL",
               data: dataMotosikal,
               borderWidth: 2,
               borderRadius: 5,
@@ -10371,12 +10345,9 @@ function paparCartaKenderaanLokasiPentadbir() {
         },
 
         options: {
-          ...pilihanCartaPentadbir(
-            "Jumlah Kenderaan"
-          ),
+          ...pilihanCartaPentadbir("Jumlah Kenderaan"),
 
           indexAxis: "y",
-
           maintainAspectRatio: false,
 
           interaction: {
@@ -10387,40 +10358,31 @@ function paparCartaKenderaanLokasiPentadbir() {
           scales: {
             x: {
               beginAtZero: true,
-
               stacked: true,
-
               ticks: {
                 color: "#d8d8d8",
                 precision: 0
               },
-
               grid: {
-                color:
-                  "rgba(255,255,255,.08)"
+                color: "rgba(255,255,255,.08)"
               },
-
               title: {
                 display: true,
-                text:
-                  "Jumlah Kenderaan",
+                text: "Jumlah Kenderaan",
                 color: "#d8d8d8"
               }
             },
 
             y: {
               stacked: true,
-
               ticks: {
                 color: "#ffffff",
                 font: {
                   weight: "700"
                 }
               },
-
               grid: {
-                color:
-                  "rgba(255,255,255,.05)"
+                color: "rgba(255,255,255,.05)"
               }
             }
           },
@@ -10431,18 +10393,14 @@ function paparCartaKenderaanLokasiPentadbir() {
                 ?.getElementsAtEventForMode(
                   event,
                   "nearest",
-                  {
-                    intersect: true
-                  },
+                  { intersect: true },
                   true
                 ) || [];
 
             if (!elemen.length) return;
 
             const rekod =
-              ringkasan[
-                elemen[0].index
-              ];
+              ringkasan[elemen[0].index];
 
             if (!rekod) return;
 
@@ -10457,16 +10415,12 @@ function paparCartaKenderaanLokasiPentadbir() {
 
             if (sasaran) {
               sasaran.style.cursor =
-                elements?.length
-                  ? "pointer"
-                  : "default";
+                elements?.length ? "pointer" : "default";
             }
           },
 
           plugins: {
-            ...pilihanCartaPentadbir(
-              "Jumlah Kenderaan"
-            ).plugins,
+            ...pilihanCartaPentadbir("Jumlah Kenderaan").plugins,
 
             legend: {
               display: true,
