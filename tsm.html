@@ -7,7 +7,7 @@
   <title>OP LITAR Formula 1 | TSM</title>
 
   <link rel="stylesheet" href="css/style.css?v=20260722-0415">
-  <link rel="stylesheet" href="css/tsm.css?v=20260810-f1-0200">
+  <link rel="stylesheet" href="css/tsm.css?v=20261019-tsm-pro-001">
 </head>
 
 <body>
@@ -34,8 +34,10 @@
 
   <div class="dashboard" id="dashboardSection">
     <header class="topbar">
-      <div>
+      <div class="tsm-brand-block">
+        <div class="tsm-eyebrow">OP LITAR • OPERATIONS CONTROL</div>
         <div class="brand">DASHBOARD TSM</div>
+        <div class="tsm-subtitle">SUBTEK OP LITAR FORMULA 1 2026 (IPD KLIA)</div>
         <div id="profilTSM">-</div>
       </div>
       <div class="topbar-actions">
@@ -126,6 +128,21 @@
     </header>
 
     <main class="content">
+      <nav class="tsm-pro-nav" aria-label="Navigasi TSM">
+        <a class="tsm-nav-card" href="admin.html"><span class="tsm-nav-icon">⌂</span><span><strong>DASHBOARD</strong><small>Paparan Pentadbir</small></span></a>
+        <button class="tsm-nav-card active" type="button" onclick="document.querySelector('.toolbar')?.scrollIntoView({behavior:'smooth'})"><span class="tsm-nav-icon">▣</span><span><strong>TSM</strong><small>Permohonan TSM</small></span></button>
+        <button class="tsm-nav-card" type="button" onclick="document.querySelector('.table-card')?.scrollIntoView({behavior:'smooth'})"><span class="tsm-nav-icon">▥</span><span><strong>REKOD</strong><small>Senarai & Status</small></span></button>
+        <button class="tsm-nav-card" type="button" onclick="muatDataTSM()"><span class="tsm-nav-icon">↻</span><span><strong>MUAT SEMULA</strong><small>Kemas Kini Data</small></span></button>
+      </nav>
+
+      <section class="tsm-hero">
+        <div class="tsm-hero-copy">
+          <span class="tsm-hero-line"></span>
+          <div><h1>DASHBOARD TSM</h1><p>SUBTEK OP LITAR FORMULA 1 2026 (IPD KLIA)</p></div>
+        </div>
+        <div class="tsm-hero-badge"><span>TSM</span><small>WALKIE-TALKIE CONTROL</small></div>
+      </section>
+
       <!-- =====================================================
      PEMBERITAHUAN LANGSUNG
 ====================================================== -->
@@ -158,11 +175,11 @@
   </button>
 </div>
       <section class="stats-grid">
-        <article class="stat-card"><div class="stat-title">Jumlah</div><div class="stat-number" id="statJumlah">0</div></article>
-        <article class="stat-card"><div class="stat-title">Menunggu</div><div class="stat-number" id="statMenunggu">0</div></article>
-        <article class="stat-card"><div class="stat-title">Dilepaskan</div><div class="stat-number" id="statDilepaskan">0</div></article>
-        <article class="stat-card"><div class="stat-title">Menunggu Pemulangan</div><div class="stat-number" id="statPemulangan">0</div></article>
-        <article class="stat-card"><div class="stat-title">Dipulangkan</div><div class="stat-number" id="statDipulangkan">0</div></article>
+        <article class="stat-card stat-total"><div class="stat-icon" aria-hidden="true">📋</div><div class="stat-copy"><div class="stat-title">Jumlah</div><div class="stat-number" id="statJumlah">0</div><div class="stat-unit">Permohonan</div></div></article>
+        <article class="stat-card stat-wait"><div class="stat-icon" aria-hidden="true">◷</div><div class="stat-copy"><div class="stat-title">Menunggu</div><div class="stat-number" id="statMenunggu">0</div><div class="stat-unit">Permohonan</div></div></article>
+        <article class="stat-card stat-release"><div class="stat-icon" aria-hidden="true">✓</div><div class="stat-copy"><div class="stat-title">Dilepaskan</div><div class="stat-number" id="statDilepaskan">0</div><div class="stat-unit">Permohonan</div></div></article>
+        <article class="stat-card stat-return-wait"><div class="stat-icon" aria-hidden="true">⌛</div><div class="stat-copy"><div class="stat-title">Menunggu Pemulangan</div><div class="stat-number" id="statPemulangan">0</div><div class="stat-unit">Permohonan</div></div></article>
+        <article class="stat-card stat-returned"><div class="stat-icon" aria-hidden="true">↩</div><div class="stat-copy"><div class="stat-title">Dipulangkan</div><div class="stat-number" id="statDipulangkan">0</div><div class="stat-unit">Permohonan</div></div></article>
       </section>
 
       <section class="toolbar">
@@ -279,6 +296,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/api-config.js?v=20260722-0415"></script>
   <script src="js/supabase-client.js?v=20260722-0415"></script>
-  <script src="js/tsm.js?v=20260810-f1-0115"></script>
+  <script src="js/tsm.js?v=20261019-tsm-pro-001"></script>
 </body>
 </html>
