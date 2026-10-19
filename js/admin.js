@@ -9012,42 +9012,27 @@ function paparCartaPengunjungLokasiPentadbir() {
   const labels =
     ringkasan.map(item => item.lokasi);
 
-  const nilaiDatang =
+  /*
+    Paparan lokasi hanya menunjukkan pengunjung DATANG.
+    Rekod keluar masih disimpan dan digunakan pada bahagian lain,
+    tetapi tidak dipaparkan dalam carta ini.
+  */
+  const nilai =
     ringkasan.map(item => item.datang);
 
-  const nilaiKeluar =
-    ringkasan.map(item => item.keluar);
-
-  const jumlahDatang =
+  const jumlahKeseluruhan =
     ringkasan.reduce(
       (jumlah, item) => jumlah + item.datang,
       0
     );
 
-  const jumlahKeluar =
-    ringkasan.reduce(
-      (jumlah, item) => jumlah + item.keluar,
-      0
-    );
-
-  const bakiKeseluruhan =
-    jumlahDatang - jumlahKeluar;
-
-  /*
-    Kekalkan kotak JUMLAH KESELURUHAN sedia ada sebagai baki semasa.
-    Carta di bawah pula membezakan DATANG dan KELUAR.
-  */
   const jumlahBox =
     el("jumlahKeseluruhanPengunjungLokasiPentadbir");
 
   if (jumlahBox) {
     jumlahBox.textContent =
-      bakiKeseluruhan.toLocaleString("ms-MY");
-
-    jumlahBox.title =
-      `Datang: ${jumlahDatang.toLocaleString("ms-MY")} | ` +
-      `Keluar: ${jumlahKeluar.toLocaleString("ms-MY")} | ` +
-      `Baki: ${bakiKeseluruhan.toLocaleString("ms-MY")}`;
+      jumlahKeseluruhan.toLocaleString("ms-MY");
+    jumlahBox.removeAttribute("title");
   }
 
   kemusnahkanCartaPentadbir(
@@ -9065,15 +9050,8 @@ function paparCartaPengunjungLokasiPentadbir() {
 
           datasets: [
             {
-              label: "PENGUNJUNG DATANG",
-              data: nilaiDatang,
-              borderWidth: 2,
-              borderRadius: 6,
-              borderSkipped: false
-            },
-            {
-              label: "PENGUNJUNG KELUAR",
-              data: nilaiKeluar,
+              label: "JUMLAH PENGUNJUNG",
+              data: nilai,
               borderWidth: 2,
               borderRadius: 6,
               borderSkipped: false
@@ -9179,33 +9157,20 @@ function paparCartaPengunjungLokasiPentadbir() {
 
               callbacks: {
                 label(context) {
+                  return (
+                    `JUMLAH PENGUNJUNG: ${Number(context.raw || 0).toLocaleString("ms-MY")}`
+                  );
+                },
+
+                afterLabel(context) {
                   const rekod =
                     ringkasan[
                       context.dataIndex
                     ];
 
-                  const nilai =
-                    Number(context.raw || 0)
-                      .toLocaleString("ms-MY");
-
                   return (
-                    `${context.dataset.label}: ${nilai}`
+                    `${rekod?.bilLaporan || 0} rekod/laporan`
                   );
-                },
-
-                afterBody(context) {
-                  const indeks =
-                    context?.[0]?.dataIndex;
-
-                  const rekod =
-                    ringkasan[indeks];
-
-                  if (!rekod) return [];
-
-                  return [
-                    `BAKI DI LOKASI: ${rekod.baki.toLocaleString("ms-MY")}`,
-                    `${rekod.bilLaporan || 0} REKOD/LAPORAN`
-                  ];
                 },
 
                 footer() {
