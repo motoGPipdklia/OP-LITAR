@@ -15578,4 +15578,40 @@ function toggleMenuPentadbir(paksaBuka = null) {
 
 document.addEventListener("keydown", function (event) {
   if (event.key === "Escape") toggleMenuPentadbir(false);
-});\n\n/* ================================================================\n   FIX 004 — PDF VIEW + PRINT 1 CARTA / HALAMAN\n================================================================ */\nasync function fix004MuatTurunPdfView(){\n  const asal=document.getElementById('kandunganLaporanKeseluruhanHarian');\n  if(!asal) return alert('Sila jana laporan terlebih dahulu.');\n  if(!window.html2canvas || !window.jspdf?.jsPDF) return alert('Modul PDF belum dimuatkan. Muat semula halaman.');\n  const tarikh=document.getElementById('tarikhLaporanKeseluruhanHarian')?.value || new Date().toISOString().slice(0,10);\n  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));\n  const rect=asal.getBoundingClientRect();\n  const canvas=await html2canvas(asal,{scale:1.35,useCORS:true,allowTaint:false,backgroundColor:getComputedStyle(document.body).backgroundColor||'#111',logging:false,width:Math.round(rect.width),height:asal.scrollHeight,windowWidth:Math.max(innerWidth,Math.round(rect.width)),windowHeight:Math.max(innerHeight,asal.scrollHeight),scrollX:0,scrollY:-scrollY});\n  const W=297, H=W*(canvas.height/canvas.width);\n  const pdf=new jspdf.jsPDF({orientation:H>=W?'portrait':'landscape',unit:'mm',format:[W,H],compress:true});\n  pdf.addImage(canvas.toDataURL('image/jpeg',.96),'JPEG',0,0,W,H,undefined,'FAST');\n  pdf.save(`OP_LITAR_LAPORAN_KESELURUHAN_VIEW_${tarikh}.pdf`);\n}\n\nfunction fix004CetakSatuCartaSatuHalaman(){\n  const asal=document.getElementById('kandunganLaporanKeseluruhanHarian');\n  if(!asal) return alert('Sila jana laporan terlebih dahulu.');\n  const clone=asal.cloneNode(true);\n  clone.querySelectorAll('.admin-visitor-detail-panel,.admin-vehicle-detail-panel,.admin-attendance-list-panel,.admin-map-location-panel,.admin-vvip-detail-panel,.admin-incident-detail-panel').forEach(x=>x.remove());\n  clone.querySelectorAll('.admin-chart-card').forEach(x=>x.classList.add('fix004-page'));\n  const styles=[...document.querySelectorAll('link[rel="stylesheet"]')].map(x=>`<link rel="stylesheet" href="${new URL(x.getAttribute('href'),document.baseURI).href}">`).join('');\n  const w=open('','_blank','width=1500,height=950'); if(!w) return alert('Benarkan pop-up untuk cetakan.');\n  w.document.write(`<!doctype html><html><head><meta charset="utf-8">${styles}<style>@page{size:A4 landscape;margin:7mm}html,body{margin:0;background:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}.fix004-page{break-before:page;page-break-before:always;break-inside:avoid;page-break-inside:avoid;width:100%!important;max-height:190mm!important;overflow:hidden!important}.fix004-page:first-child{break-before:auto;page-break-before:auto}.admin-visitor-layout,.admin-vehicle-layout,.admin-attendance-layout,.admin-operation-map-layout,.admin-vvip-layout,.admin-incident-layout{display:block!important}.admin-visitor-chart-panel,.admin-vehicle-chart-panel,.admin-attendance-chart-panel,.admin-operation-map-stage,.admin-vvip-list-panel,.admin-incident-chart-panel{width:100%!important;max-width:none!important}</style></head><body>${clone.outerHTML}<script>addEventListener('load',()=>setTimeout(()=>print(),800))<\\/script></body></html>`);\n  w.document.close();\n}\n\naddEventListener('DOMContentLoaded',()=>{\n  const pdf=document.getElementById('btnPdfLaporanKeseluruhanHarian');\n  const cetak=document.getElementById('btnCetakLaporanKeseluruhanHarian');\n  if(pdf){const n=pdf.cloneNode(true);pdf.replaceWith(n);n.addEventListener('click',fix004MuatTurunPdfView);}\n  if(cetak){const n=cetak.cloneNode(true);cetak.replaceWith(n);n.addEventListener('click',fix004CetakSatuCartaSatuHalaman);}\n});\n
+});
+
+/* ================================================================
+   FIX 004 — PDF VIEW + PRINT 1 CARTA / HALAMAN
+================================================================ */
+async function fix004MuatTurunPdfView(){
+  const asal=document.getElementById('kandunganLaporanKeseluruhanHarian');
+  if(!asal) return alert('Sila jana laporan terlebih dahulu.');
+  if(!window.html2canvas || !window.jspdf?.jsPDF) return alert('Modul PDF belum dimuatkan. Muat semula halaman.');
+  const tarikh=document.getElementById('tarikhLaporanKeseluruhanHarian')?.value || new Date().toISOString().slice(0,10);
+  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+  const rect=asal.getBoundingClientRect();
+  const canvas=await html2canvas(asal,{scale:1.35,useCORS:true,allowTaint:false,backgroundColor:getComputedStyle(document.body).backgroundColor||'#111',logging:false,width:Math.round(rect.width),height:asal.scrollHeight,windowWidth:Math.max(innerWidth,Math.round(rect.width)),windowHeight:Math.max(innerHeight,asal.scrollHeight),scrollX:0,scrollY:-scrollY});
+  const W=297, H=W*(canvas.height/canvas.width);
+  const pdf=new jspdf.jsPDF({orientation:H>=W?'portrait':'landscape',unit:'mm',format:[W,H],compress:true});
+  pdf.addImage(canvas.toDataURL('image/jpeg',.96),'JPEG',0,0,W,H,undefined,'FAST');
+  pdf.save(`OP_LITAR_LAPORAN_KESELURUHAN_VIEW_${tarikh}.pdf`);
+}
+
+function fix004CetakSatuCartaSatuHalaman(){
+  const asal=document.getElementById('kandunganLaporanKeseluruhanHarian');
+  if(!asal) return alert('Sila jana laporan terlebih dahulu.');
+  const clone=asal.cloneNode(true);
+  clone.querySelectorAll('.admin-visitor-detail-panel,.admin-vehicle-detail-panel,.admin-attendance-list-panel,.admin-map-location-panel,.admin-vvip-detail-panel,.admin-incident-detail-panel').forEach(x=>x.remove());
+  clone.querySelectorAll('.admin-chart-card').forEach(x=>x.classList.add('fix004-page'));
+  const styles=[...document.querySelectorAll('link[rel="stylesheet"]')].map(x=>`<link rel="stylesheet" href="${new URL(x.getAttribute('href'),document.baseURI).href}">`).join('');
+  const w=open('','_blank','width=1500,height=950'); if(!w) return alert('Benarkan pop-up untuk cetakan.');
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8">${styles}<style>@page{size:A4 landscape;margin:7mm}html,body{margin:0;background:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}.fix004-page{break-before:page;page-break-before:always;break-inside:avoid;page-break-inside:avoid;width:100%!important;max-height:190mm!important;overflow:hidden!important}.fix004-page:first-child{break-before:auto;page-break-before:auto}.admin-visitor-layout,.admin-vehicle-layout,.admin-attendance-layout,.admin-operation-map-layout,.admin-vvip-layout,.admin-incident-layout{display:block!important}.admin-visitor-chart-panel,.admin-vehicle-chart-panel,.admin-attendance-chart-panel,.admin-operation-map-stage,.admin-vvip-list-panel,.admin-incident-chart-panel{width:100%!important;max-width:none!important}</style></head><body>${clone.outerHTML}<script>addEventListener('load',()=>setTimeout(()=>print(),800))<\\/script></body></html>`);
+  w.document.close();
+}
+
+addEventListener('DOMContentLoaded',()=>{
+  const pdf=document.getElementById('btnPdfLaporanKeseluruhanHarian');
+  const cetak=document.getElementById('btnCetakLaporanKeseluruhanHarian');
+  if(pdf){const n=pdf.cloneNode(true);pdf.replaceWith(n);n.addEventListener('click',fix004MuatTurunPdfView);}
+  if(cetak){const n=cetak.cloneNode(true);cetak.replaceWith(n);n.addEventListener('click',fix004CetakSatuCartaSatuHalaman);}
+});
