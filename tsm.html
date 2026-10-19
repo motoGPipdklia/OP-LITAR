@@ -7,7 +7,7 @@
   <title>OP LITAR Formula 1 | TSM</title>
 
   <link rel="stylesheet" href="css/style.css?v=20260722-0415">
-  <link rel="stylesheet" href="css/tsm.css?v=20261019-tsm-pro-001">
+  <link rel="stylesheet" href="css/tsm.css?v=20261019-tsm-login-002">
 </head>
 
 <body>
@@ -20,15 +20,18 @@
           alt="OPS Laris Formula 1 2026"
         >
       </div>
+      <div class="tsm-login-radio" aria-hidden="true">▥</div>
       <div class="logo">TSM</div>
-      <p>Pengurusan Set Walkie-Talkie</p>
+      <p class="tsm-login-subtitle">Pengurusan Set Walkie-Talkie</p>
+      <div class="tsm-login-rule" aria-hidden="true"></div>
       <label class="sr-only" for="noBadan">No Badan TSM</label>
       <input id="noBadan" type="text" placeholder="No Badan TSM" autocomplete="username">
       <label class="sr-only" for="password">Kata Laluan</label>
       <input id="password" type="password" placeholder="Kata Laluan" autocomplete="current-password">
       <button class="primary" id="btnLogin" type="button" onclick="loginTSM()">LOGIN TSM</button>
       <div class="status hidden" id="loginStatus" role="status" aria-live="polite"></div>
-      <a class="link" href="index.html">KEMBALI KE LOGIN PETUGAS</a>
+      <div class="tsm-login-divider"><span>ATAU</span></div>
+      <a class="link tsm-login-back" href="index.html">← &nbsp; KEMBALI KE LOGIN PETUGAS</a>
     </section>
   </main>
 
