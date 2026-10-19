@@ -1808,3 +1808,22 @@ body #loginSection #loginStatus{
     font-size:30px !important;
   }
 }
+
+/* ================================================================
+   FIX 002 - PUSATKAN LOGO OP LITAR SECARA VISUAL
+   logo-utama.png mempunyai ruang lutsinar yang tidak seimbang,
+   jadi imej dialihkan sedikit ke kanan supaya logo nampak tepat
+   di tengah kad login Urusetia.
+================================================================ */
+body #loginSection .urusetia-login-logo{
+  position:relative !important;
+  left:24px !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+}
+
+@media(max-width:520px){
+  body #loginSection .urusetia-login-logo{
+    left:16px !important;
+  }
+}
