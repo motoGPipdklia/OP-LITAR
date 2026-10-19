@@ -10622,6 +10622,8 @@ function paparCartaKenderaanPentadbir() {
   paparCartaKenderaanLokasiPentadbir();
 
   paparButiranKenderaanPentadbir();
+
+  jadualResizeCartaKenderaanPentadbir();
 }
 
 
@@ -15579,3 +15581,7 @@ function toggleMenuPentadbir(paksaBuka = null) {
 document.addEventListener("keydown", function (event) {
   if (event.key === "Escape") toggleMenuPentadbir(false);
 });
+/* FIX AUTO RESIZE CARTA KENDERAAN */
+function jadualResizeCartaKenderaanPentadbir(){const resize=()=>{try{cartaKenderaanPentadbir?.resize()}catch(_){}try{cartaKenderaanLokasiPentadbir?.resize()}catch(_){}};requestAnimationFrame(()=>requestAnimationFrame(resize));setTimeout(resize,120);setTimeout(resize,350)}
+window.addEventListener("load",jadualResizeCartaKenderaanPentadbir);window.addEventListener("resize",jadualResizeCartaKenderaanPentadbir);
+document.addEventListener("DOMContentLoaded",()=>{const kad=document.querySelector('.admin-chart-card[data-chart-section="KENDERAAN"]');if(kad&&"ResizeObserver" in window){const ro=new ResizeObserver(jadualResizeCartaKenderaanPentadbir);ro.observe(kad)}});

@@ -72,8 +72,8 @@ document.addEventListener("DOMContentLoaded", () => {
   pwaUpdateUI();
 
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./service-worker.js")
-      .catch(err => console.error("Service Worker gagal:", err));
+    navigator.serviceWorker.register("./service-worker.js?v=20261019-cache-chart-001", { updateViaCache: "none" })
+      .then(reg => reg.update()).catch(err => console.error("Service Worker gagal:", err));
   }
 });
 
