@@ -4770,11 +4770,86 @@ body.marker-dragging *{
 }
 
 
-/* FIX 20261019 CACHE + CARTA KENDERAAN FULL WIDTH */
-.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-layout{display:grid!important;grid-template-columns:minmax(0,1fr)!important;width:100%!important;max-width:none!important;gap:16px!important;align-items:stretch!important}
-.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-chart-panel,.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-chart-block,.admin-chart-card[data-chart-section="KENDERAAN"] .admin-chart-canvas-wrap{width:100%!important;max-width:none!important;min-width:0!important;box-sizing:border-box!important;margin-left:0!important;margin-right:0!important}
-.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-time-canvas{height:390px!important;min-height:390px!important}
-.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-location-canvas{height:520px!important;min-height:520px!important;max-height:none!important}
-.admin-chart-card[data-chart-section="KENDERAAN"] #canvasCartaKenderaan,.admin-chart-card[data-chart-section="KENDERAAN"] #canvasCartaKenderaanLokasi{display:block!important;width:100%!important;max-width:none!important;height:100%!important}
-.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-detail-panel{width:100%!important;max-width:none!important;height:auto!important;min-height:320px!important}
-@media(max-width:620px){.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-time-canvas{height:300px!important;min-height:300px!important}.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-location-canvas{height:400px!important;min-height:400px!important}}
+/* ================================================================
+   FIX 20261019-002 — CARTA KENDERAAN TERUS BESAR APABILA DIPILIH
+   Rule ini sengaja diletakkan PALING BAWAH supaya mengatasi rule lama.
+================================================================ */
+.admin-chart-grid > .admin-chart-card[data-chart-section="KENDERAAN"]{
+  grid-column:1 / -1 !important;
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+}
+
+.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-layout{
+  display:block !important;
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  margin-top:14px !important;
+}
+
+.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-chart-panel{
+  display:block !important;
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  height:auto !important;
+  box-sizing:border-box !important;
+  padding:14px !important;
+  margin:0 !important;
+}
+
+.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-chart-block,
+.admin-chart-card[data-chart-section="KENDERAAN"] .admin-chart-canvas-wrap{
+  display:block !important;
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+  margin-left:0 !important;
+  margin-right:0 !important;
+}
+
+.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-time-canvas{
+  height:430px !important;
+  min-height:430px !important;
+}
+
+.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-location-canvas{
+  height:560px !important;
+  min-height:560px !important;
+  max-height:none !important;
+}
+
+.admin-chart-card[data-chart-section="KENDERAAN"] #canvasCartaKenderaan,
+.admin-chart-card[data-chart-section="KENDERAAN"] #canvasCartaKenderaanLokasi{
+  display:block !important;
+  width:100% !important;
+  max-width:none !important;
+  height:100% !important;
+}
+
+/* Butiran kekal, tetapi turun ke bawah supaya tidak mengecilkan carta. */
+.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-detail-panel{
+  display:flex !important;
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  height:auto !important;
+  min-height:320px !important;
+  margin-top:16px !important;
+  box-sizing:border-box !important;
+}
+
+@media(max-width:700px){
+  .admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-time-canvas{
+    height:320px !important;
+    min-height:320px !important;
+  }
+  .admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-location-canvas{
+    height:420px !important;
+    min-height:420px !important;
+  }
+}
