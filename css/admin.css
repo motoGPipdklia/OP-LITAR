@@ -4853,199 +4853,245 @@ body.marker-dragging *{
     min-height:420px !important;
   }
 }
+
 /* =====================================================================
-   OP LITAR FIX 008 — PROFESSIONAL DESKTOP DASHBOARD
-   UI sahaja. Fungsi, ID, carta, laporan, PDF dan cetakan dikekalkan.
+   OP LITAR FIX 009 — PROFESSIONAL DASHBOARD / MOCKUP MATCH
+   Paparan desktop sahaja. Semua fungsi/ID/carta/PDF FIX 007 dikekalkan.
 ===================================================================== */
 @media screen and (min-width:1100px){
   :root{
-    --pro-bg:#07111f;
-    --pro-bg-2:#0a1626;
-    --pro-card:#101d2e;
-    --pro-card-2:#0d1928;
-    --pro-line:rgba(124,165,214,.18);
-    --pro-blue:#2788e8;
-    --pro-cyan:#33c7ff;
-    --pro-gold:#e1b735;
-    --pro-text:#f4f8ff;
-    --pro-muted:#8fa3bc;
+    --dash-bg:#07101d;
+    --dash-bg-soft:#0a1626;
+    --dash-panel:#0d1b2d;
+    --dash-panel-2:#102238;
+    --dash-line:rgba(111,164,220,.18);
+    --dash-line-strong:rgba(68,192,255,.28);
+    --dash-text:#f5f8fc;
+    --dash-muted:#91a6bd;
+    --dash-cyan:#35c7ff;
+    --dash-blue:#2587e8;
+    --dash-gold:#e4bb39;
   }
 
-  body{background:linear-gradient(180deg,#07111f 0%,#081321 45%,#06101c 100%);}
-  .dashboard{background:radial-gradient(circle at 80% -10%,rgba(39,136,232,.13),transparent 34%),linear-gradient(180deg,#07111f,#081321 55%,#07111f);}
+  html,body{background:var(--dash-bg)!important;}
+  body{font-family:Inter,Segoe UI,Arial,sans-serif;}
+  .dashboard{
+    background:
+      radial-gradient(circle at 8% 0%,rgba(37,135,232,.12),transparent 27%),
+      radial-gradient(circle at 92% 6%,rgba(53,199,255,.08),transparent 23%),
+      linear-gradient(180deg,#07111f 0%,#07101c 100%);
+  }
 
+  /* HEADER: padat, tiada ruang kosong besar di sebelah kiri. */
   .topbar{
     position:relative;
     top:auto;
     z-index:10;
     display:grid;
-    grid-template-columns:minmax(330px,1fr) minmax(650px,1.55fr);
-    align-items:center;
-    gap:32px;
-    min-height:220px;
-    padding:34px 34px 30px;
-    border-bottom:1px solid var(--pro-line);
-    background:linear-gradient(120deg,rgba(10,23,40,.98),rgba(7,17,31,.96));
-    box-shadow:0 18px 45px rgba(0,0,0,.22);
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-areas:"identity logout" "menu menu";
+    gap:18px 22px;
+    min-height:0;
+    padding:28px 32px 24px;
+    border-bottom:1px solid var(--dash-line);
+    background:linear-gradient(180deg,rgba(10,24,41,.98),rgba(7,17,30,.97));
+    box-shadow:0 14px 38px rgba(0,0,0,.22);
   }
-  .topbar::before{
-    content:"OP LITAR  •  OPERATIONS CONTROL";
-    position:absolute;
-    left:34px; top:28px;
-    color:var(--pro-cyan);
-    font-size:11px; font-weight:900; letter-spacing:.18em;
+  .topbar>div:first-child{
+    grid-area:identity;
+    padding:0;
+    align-self:center;
   }
-  .topbar > div:first-child{padding-top:34px;}
+  .topbar>div:first-child::before{
+    content:"OP LITAR  /  OPERATIONS CONTROL";
+    display:block;
+    margin-bottom:8px;
+    color:var(--dash-cyan);
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.18em;
+  }
   .topbar .brand{
     margin:0;
-    color:var(--pro-text);
-    font-size:32px;
+    color:var(--dash-text);
+    font-size:30px;
+    line-height:1.05;
     font-weight:900;
     letter-spacing:-.025em;
-    text-shadow:0 0 28px rgba(51,199,255,.12);
   }
-  #adminName{margin-top:10px;color:var(--pro-muted);font-size:14px;}
+  #adminName{margin-top:7px;color:var(--dash-muted);font-size:13px;}
 
   .topbar-actions.admin-menu-shell{
-    position:relative;
-    display:grid;
-    grid-template-columns:1fr auto;
-    align-items:start;
-    gap:12px;
-    width:100%;
+    grid-area:menu;
+    display:contents;
   }
   .admin-menu-toggle{display:none!important;}
   #menuPentadbir.admin-menu-panel,
   #menuPentadbir.admin-menu-panel[hidden]{
+    grid-area:menu;
     display:grid!important;
-    grid-column:1;
-    grid-row:1 / span 2;
-    grid-template-columns:repeat(3,minmax(0,1fr));
+    grid-template-columns:repeat(6,minmax(135px,1fr));
     gap:10px;
-    padding:14px;
-    border:1px solid var(--pro-line);
-    border-radius:16px;
-    background:rgba(12,25,42,.82);
-    box-shadow:0 18px 45px rgba(0,0,0,.24),inset 0 1px rgba(255,255,255,.025);
-    backdrop-filter:blur(12px);
+    width:100%;
+    margin:0;
+    padding:0;
+    border:0;
+    background:transparent;
+    box-shadow:none;
   }
   #menuPentadbir .header-action-button,
   #menuPentadbir .nav-button{
-    min-height:48px;
-    padding:11px 12px;
-    border:1px solid rgba(255,255,255,.08);
-    border-radius:10px;
-    font-size:11px;
-    letter-spacing:.01em;
-    box-shadow:0 7px 18px rgba(0,0,0,.16);
-  }
-  .topbar-actions > .logout{
-    grid-column:2;
-    grid-row:1;
-    min-width:118px;
-    min-height:48px;
-    border:1px solid rgba(255,107,107,.22);
-    background:linear-gradient(135deg,#a52e36,#7f2329);
-    box-shadow:0 8px 22px rgba(145,37,45,.25);
-  }
-
-  .content{padding:24px 28px 44px;}
-  .content > section{scroll-margin-top:18px;}
-
-  .filters{
-    gap:14px;
-    margin-bottom:12px;
-    padding:18px;
-    border:1px solid var(--pro-line);
-    border-radius:16px;
-    background:linear-gradient(145deg,rgba(16,29,46,.96),rgba(11,23,38,.96));
-    box-shadow:0 14px 32px rgba(0,0,0,.18);
-  }
-  .filters label{color:#9db0c8;font-size:11px;letter-spacing:.05em;text-transform:uppercase;}
-  .filters input,.filters select{
-    min-height:48px;
-    border-color:rgba(126,163,207,.2);
-    background:#091523;
-    color:#f4f8ff;
-  }
-  .filters input:focus,.filters select:focus{border-color:var(--pro-cyan);box-shadow:0 0 0 3px rgba(51,199,255,.1);}
-
-  .actions{gap:10px;margin-bottom:18px;}
-  .actions button,.actions select{
-    min-height:48px;
-    border:1px solid rgba(255,255,255,.07);
-    border-radius:10px;
-    box-shadow:0 8px 20px rgba(0,0,0,.17);
-  }
-
-  .stats{grid-template-columns:repeat(8,minmax(0,1fr));gap:12px;}
-  .stat{
     position:relative;
-    min-height:116px;
-    padding:19px 16px 16px;
-    overflow:hidden;
-    border:1px solid var(--pro-line);
-    border-radius:15px;
-    background:linear-gradient(145deg,#112035,#0d1929);
-    box-shadow:0 13px 28px rgba(0,0,0,.19),inset 0 1px rgba(255,255,255,.025);
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-height:76px;
+    padding:12px 10px 11px;
+    border:1px solid var(--dash-line);
+    border-radius:13px;
+    background:linear-gradient(145deg,#12263e,#0d1d30)!important;
+    color:#eef6ff!important;
+    font-size:10px;
+    line-height:1.2;
+    font-weight:800;
+    letter-spacing:.015em;
+    box-shadow:0 8px 22px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.035);
     transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;
   }
-  .stat::before{
-    content:"";
-    position:absolute;left:0;top:0;bottom:0;width:3px;
-    background:linear-gradient(180deg,var(--pro-cyan),var(--pro-blue));
+  #menuPentadbir .header-action-button::before,
+  #menuPentadbir .nav-button::before{
+    display:block;
+    color:var(--dash-cyan);
+    font-size:22px;
+    line-height:1;
+    font-weight:400;
   }
-  .stat:nth-child(2)::before,.stat:nth-child(6)::before{background:linear-gradient(#48d68b,#1f9c63);}
-  .stat:nth-child(4)::before,.stat:nth-child(7)::before{background:linear-gradient(#ff7b7b,#a83a44);}
-  .stat:nth-child(5)::before{background:linear-gradient(#bd8cff,#6d54c7);}
-  .stat:nth-child(8)::before{background:linear-gradient(#f0c64b,#b98b16);}
-  .stat:hover{transform:translateY(-2px);border-color:rgba(51,199,255,.32);box-shadow:0 18px 34px rgba(0,0,0,.25);}
-  .value{color:#fff;font-size:32px;line-height:1.05;}
-  .label{color:#91a5be;font-size:12px;font-weight:700;}
+  #menuPentadbir .header-action-button:hover,
+  #menuPentadbir .nav-button:hover{
+    transform:translateY(-2px);
+    border-color:var(--dash-line-strong);
+    box-shadow:0 12px 28px rgba(0,0,0,.25),0 0 0 1px rgba(53,199,255,.05);
+    filter:none;
+  }
+  #menuPentadbir button:nth-child(1)::before{content:"＋";}
+  #menuPentadbir button:nth-child(2)::before{content:"⇧";}
+  #menuPentadbir button:nth-child(3)::before{content:"⇄";}
+  #menuPentadbir button:nth-child(4)::before{content:"⌘";}
+  #menuPentadbir button:nth-child(5)::before{content:"▥";}
+  #menuPentadbir button:nth-child(6)::before{content:"▤";}
+  #menuPentadbir button:nth-child(7)::before{content:"▧";}
+  #menuPentadbir button:nth-child(8)::before{content:"◆";}
+  #menuPentadbir button:nth-child(9)::before{content:"◉";}
+  #menuPentadbir button:nth-child(10)::before{content:"⚿";}
+  #menuPentadbir .nav-button::before{content:"TSM";font-size:13px;font-weight:900;letter-spacing:.08em;}
+
+  .topbar-actions>.logout{
+    grid-area:logout;
+    align-self:start;
+    min-width:124px;
+    min-height:44px;
+    margin:0;
+    border:1px solid rgba(255,112,112,.24);
+    border-radius:11px;
+    background:linear-gradient(135deg,#b3333d,#8c252d);
+    box-shadow:0 9px 24px rgba(150,38,47,.24);
+  }
+
+  .content{padding:22px 30px 46px;}
+  .content>section{scroll-margin-top:20px;}
+
+  /* Penapis seperti control panel. */
+  .filters{
+    gap:12px;
+    margin-bottom:12px;
+    padding:16px;
+    border:1px solid var(--dash-line);
+    border-radius:15px;
+    background:linear-gradient(145deg,rgba(14,29,48,.98),rgba(10,22,37,.98));
+    box-shadow:0 12px 28px rgba(0,0,0,.16);
+  }
+  .filters label{color:#91a9c3;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
+  .filters input,.filters select{
+    min-height:46px;
+    border:1px solid rgba(120,166,213,.19);
+    border-radius:10px;
+    background:#081522;
+    color:#f4f8ff;
+  }
+  .filters input:focus,.filters select:focus{border-color:var(--dash-cyan);box-shadow:0 0 0 3px rgba(53,199,255,.09);}
+
+  .actions{gap:10px;margin-bottom:16px;}
+  .actions button,.actions select{
+    min-height:46px;
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:10px;
+    box-shadow:0 7px 18px rgba(0,0,0,.17);
+  }
+
+  /* KPI — gaya mockup, nilai besar + accent berbeza. */
+  .stats{grid-template-columns:repeat(8,minmax(0,1fr));gap:11px;}
+  .stat{
+    position:relative;
+    min-height:108px;
+    padding:18px 15px 14px;
+    overflow:hidden;
+    border:1px solid var(--dash-line);
+    border-radius:14px;
+    background:linear-gradient(145deg,#102139,#0c192a);
+    box-shadow:0 11px 26px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.025);
+  }
+  .stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--dash-cyan);}
+  .stat:nth-child(2)::before,.stat:nth-child(6)::before{background:#39d98a;}
+  .stat:nth-child(3)::before{background:#f0c94a;}
+  .stat:nth-child(4)::before,.stat:nth-child(7)::before{background:#ff6673;}
+  .stat:nth-child(5)::before{background:#a779ff;}
+  .stat:nth-child(8)::before{background:#e7b83d;}
+  .stat::after{content:"";position:absolute;width:72px;height:72px;right:-28px;top:-30px;border-radius:50%;background:rgba(53,199,255,.045);}
+  .value{color:#fff;font-size:31px;font-weight:900;line-height:1;}
+  .label{margin-top:10px;color:#91a7c0;font-size:11px;font-weight:700;}
 
   .progress-card{
-    padding:20px 22px;
-    border:1px solid var(--pro-line);
-    border-radius:16px;
-    background:linear-gradient(145deg,#101d2e,#0c1827);
-    box-shadow:0 14px 32px rgba(0,0,0,.18);
-  }
-  .progress-title{color:#f4f8ff;font-size:15px;}
-  .progress-percent{color:var(--pro-cyan);font-size:25px;}
-  .progress-track{height:13px;background:#17273a;box-shadow:inset 0 2px 5px rgba(0,0,0,.35);}
-  .progress-fill{background:linear-gradient(90deg,#1d7fe0,#35c8ff);box-shadow:0 0 16px rgba(51,199,255,.22);}
-  .progress-text{color:#8fa3bc;font-size:12px;}
-
-  .card,.table-card,.admin-chart-card,.admin-chart-summary-card,.admin-operation-map-card{
-    border-color:var(--pro-line);
-  }
-  .card,.table-card{
-    background:linear-gradient(145deg,rgba(16,29,46,.98),rgba(11,22,36,.98));
-    box-shadow:0 15px 34px rgba(0,0,0,.2);
-  }
-  .section-heading h2,.admin-chart-card h3{color:#e9c54c;}
-
-  .admin-chart-module{padding:22px;border-radius:18px;}
-  .admin-chart-grid{gap:16px;}
-  .admin-chart-card{
-    padding:19px;
+    margin-top:14px;
+    padding:18px 20px;
+    border:1px solid var(--dash-line);
     border-radius:15px;
-    background:linear-gradient(145deg,#0f1d2f,#0b1726);
-    box-shadow:0 12px 28px rgba(0,0,0,.18);
+    background:linear-gradient(145deg,#0f2035,#0b192a);
+    box-shadow:0 12px 28px rgba(0,0,0,.17);
   }
-  .admin-chart-summary-card{background:#0b1725;border-radius:12px;}
-  .admin-chart-canvas-wrap{height:340px;}
+  .progress-title{font-size:14px;color:#f5f8fc;}
+  .progress-percent{color:var(--dash-cyan);font-size:24px;font-weight:900;}
+  .progress-track{height:12px;background:#172a40;box-shadow:inset 0 2px 5px rgba(0,0,0,.35);}
+  .progress-fill{background:linear-gradient(90deg,#2587e8,#35c7ff);box-shadow:0 0 15px rgba(53,199,255,.2);}
+  .progress-text{color:#8fa5bd;font-size:11px;}
+
+  /* Semua kandungan/carta asal kekal, hanya skin profesional. */
+  .card,.table-card,.admin-chart-card,.admin-chart-summary-card,.admin-operation-map-card{border-color:var(--dash-line);}
+  .card,.table-card{
+    background:linear-gradient(145deg,rgba(15,31,51,.98),rgba(10,22,37,.98));
+    box-shadow:0 14px 32px rgba(0,0,0,.19);
+  }
+  .section-heading h2,.admin-chart-card h3{color:#f0c94a;}
+  .admin-chart-module{padding:20px;border-radius:17px;}
+  .admin-chart-grid{gap:15px;}
+  .admin-chart-card{
+    padding:18px;
+    border-radius:14px;
+    background:linear-gradient(145deg,#0f2035,#0a1828);
+    box-shadow:0 12px 27px rgba(0,0,0,.18);
+  }
+  .admin-chart-summary-card{background:#091827;border-radius:11px;}
+  .admin-chart-canvas-wrap{height:350px;}
   .admin-attendance-chart-card,.admin-incident-chart-card{grid-column:1/-1;}
   .admin-attendance-list-panel,.admin-attendance-chart-panel,
-  .admin-incident-chart-panel,.admin-incident-detail-panel{background:#0a1624;border-color:var(--pro-line);}
-
-  .wrap,.admin-report-table-wrap{border-color:var(--pro-line);background:#091522;}
-  th{background:#0d1a2a;color:#e6bf3e;}
-  tbody tr:hover{background:#12243a;}
+  .admin-incident-chart-panel,.admin-incident-detail-panel{background:#091725;border-color:var(--dash-line);}
+  .wrap,.admin-report-table-wrap{border-color:var(--dash-line);background:#081522;}
+  th{background:#0d1c2e;color:#e8c345;}
+  tbody tr:hover{background:#11253c;}
 }
 
 @media screen and (min-width:1500px){
-  .topbar{grid-template-columns:minmax(400px,.9fr) minmax(760px,1.55fr);padding-left:42px;padding-right:42px;}
-  .content{padding-left:32px;padding-right:32px;}
-  .admin-chart-canvas-wrap{height:370px;}
+  .topbar{padding-left:40px;padding-right:40px;}
+  .content{padding-left:36px;padding-right:36px;}
+  #menuPentadbir.admin-menu-panel,#menuPentadbir.admin-menu-panel[hidden]{grid-template-columns:repeat(6,minmax(150px,1fr));}
+  .admin-chart-canvas-wrap{height:380px;}
 }
