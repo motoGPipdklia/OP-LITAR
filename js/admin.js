@@ -9030,9 +9030,17 @@ function paparCartaPengunjungLokasiPentadbir() {
     el("jumlahKeseluruhanPengunjungLokasiPentadbir");
 
   if (jumlahBox) {
-    jumlahBox.textContent =
-      jumlahKeseluruhan.toLocaleString("ms-MY");
-    jumlahBox.removeAttribute("title");
+    /*
+      Paparan JUMLAH KESELURUHAN dibuang sepenuhnya
+      daripada panel PENGUNJUNG MENGIKUT LOKASI.
+    */
+    const kotakJumlah =
+      jumlahBox.closest(".admin-chart-location-total") ||
+      jumlahBox.parentElement;
+
+    if (kotakJumlah) {
+      kotakJumlah.style.display = "none";
+    }
   }
 
   kemusnahkanCartaPentadbir(
