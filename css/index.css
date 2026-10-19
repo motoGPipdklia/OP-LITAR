@@ -1171,3 +1171,28 @@ body:has(#loginBox:not(.hidden)) #loginBox{
     margin:22px auto 28px !important;
   }
 }
+
+/* =========================================================
+   OP LITAR INDEX FIX 004 - BUANG JALUR HITAM ATAS
+   Background portal bermula terus dari bahagian atas viewport.
+========================================================= */
+html:has(body #loginBox:not(.hidden)),
+body:has(#loginBox:not(.hidden)){
+  margin:0 !important;
+  padding:0 !important;
+  min-height:100vh !important;
+  background-image:
+    linear-gradient(rgba(0,0,0,.58),rgba(0,0,0,.58)),
+    url("../images/background.jpg") !important;
+  background-size:cover !important;
+  background-position:center top !important;
+  background-repeat:no-repeat !important;
+  background-attachment:fixed !important;
+  background-color:#05080b !important;
+}
+
+body:has(#loginBox:not(.hidden))::before,
+body:has(#loginBox:not(.hidden))::after{
+  content:none !important;
+  display:none !important;
+}
