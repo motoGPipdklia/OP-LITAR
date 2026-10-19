@@ -4893,111 +4893,14 @@ body.marker-dragging *{
   #loginPage #tajukLogin{font-size:14px;margin-bottom:22px;}
   #loginPage input,#loginPage #btnLogin.primary{height:54px;min-height:54px;}
 }
-
-/* ================================================================
-   FIX 010 — PROFESSIONAL OPERATIONS DASHBOARD
-   Visual-only enhancement. Existing IDs/functions remain unchanged.
-================================================================ */
-@media (min-width: 901px){
-  :root{
-    --pro-bg:#07111f;
-    --pro-panel:#0c1a2a;
-    --pro-panel-2:#102338;
-    --pro-line:rgba(117,170,216,.22);
-    --pro-blue:#1f9cf0;
-    --pro-blue-soft:#8bd3ff;
-    --pro-gold:#d7b45a;
-  }
-
-  body{background:radial-gradient(circle at 12% -10%,#12385a 0,transparent 28%),linear-gradient(180deg,#07111f 0%,#08131f 100%);}
-  .dashboard{background:transparent;}
-
-  .topbar{
-    padding:18px 24px;
-    border-bottom:1px solid rgba(72,153,216,.26);
-    background:linear-gradient(180deg,rgba(8,24,40,.98),rgba(6,17,29,.98));
-    box-shadow:0 10px 30px rgba(0,0,0,.24);
-  }
-  .brand{font-size:24px;letter-spacing:.055em;color:#fff;}
-  #adminName{color:#8fb2cc;font-weight:700;}
-  .admin-menu-toggle{
-    border:1px solid rgba(50,174,244,.42)!important;
-    background:linear-gradient(180deg,#123b5d,#0c2b46)!important;
-    color:#eaf8ff!important;
-  }
-  .admin-menu-panel{
-    border:1px solid rgba(65,159,224,.28)!important;
-    border-radius:14px!important;
-    background:linear-gradient(180deg,rgba(11,29,47,.99),rgba(7,20,34,.99))!important;
-    box-shadow:0 18px 44px rgba(0,0,0,.35);
-  }
-  .logout{border:1px solid rgba(255,117,117,.32);background:linear-gradient(180deg,#9d3535,#742323);}
-
-  .content{padding:24px;}
-  .filters,.card,.table-card,.progress-card,.admin-chart-card{
-    border-color:var(--pro-line)!important;
-    background:linear-gradient(180deg,rgba(14,32,50,.98),rgba(9,24,39,.98))!important;
-    box-shadow:0 12px 32px rgba(0,0,0,.22)!important;
-  }
-  .filters{padding:18px;border-radius:16px;}
-  label{color:#a9c7dc;letter-spacing:.02em;}
-  input,select,textarea{
-    border-color:rgba(105,157,198,.30);
-    background:#081725;
-    color:#f5fbff;
-  }
-  input:focus,select:focus,textarea:focus{
-    border-color:#28aaf4;
-    box-shadow:0 0 0 3px rgba(40,170,244,.14);
-  }
-
-  .actions{gap:12px;}
-  .actions button,.actions .tsm-button,.header-action-button{
-    border-radius:10px;
-    letter-spacing:.025em;
-  }
-  .blue{background:linear-gradient(180deg,#238fd0,#176da6);}
-  .gold{background:linear-gradient(180deg,#e2bd5c,#b98c28);color:#10151a;}
-  .green-button{background:linear-gradient(180deg,#2f9b61,#207245);}
-  .gray{background:linear-gradient(180deg,#42576a,#2c3e4f);}
-  .tsm-button{background:linear-gradient(180deg,#3d7094,#2b5572);}
-
-  .stats{gap:14px;}
-  .stat{
-    position:relative;
-    overflow:hidden;
-    min-height:112px;
-    padding:19px 16px;
-    border:1px solid var(--pro-line);
-    background:linear-gradient(145deg,#10283e,#0b1c2d);
-    box-shadow:0 10px 25px rgba(0,0,0,.18);
-  }
-  .stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#2daef5;opacity:.85;}
-  .value{color:#f2c963;font-size:32px;letter-spacing:-.02em;}
-  .label{color:#b8cedd;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.045em;}
-
-  .progress-card{padding:20px;}
-  .progress-title{color:#f4f9fc;letter-spacing:.02em;}
-  .progress-track{height:13px;background:#06111c;border:1px solid rgba(92,143,182,.25);}
-  .progress-fill{background:linear-gradient(90deg,#148ed8,#31b9ff);}
-  .progress-percent{color:#55c4ff;}
-
-  .table-card{padding:20px;}
-  .wrap{border-color:rgba(95,150,191,.22);background:#071521;}
-  th{background:#0b2235;color:#78cfff;border-bottom-color:rgba(87,160,211,.28);font-size:12px;letter-spacing:.035em;}
-  td{border-bottom-color:rgba(84,132,167,.16);}
-  tbody tr:hover{background:rgba(35,117,171,.12);}
-
-  .section-heading h2,.admin-chart-card h3{color:#f3c963;letter-spacing:.025em;}
-  .muted{color:#8faec4;}
-  .admin-chart-summary-card{
-    border-color:rgba(76,154,211,.25);
-    background:linear-gradient(145deg,#0d263a,#091a2a);
-  }
-  .admin-chart-summary-card span{color:#91afc5;}
-  .admin-chart-summary-card strong{color:#55c5ff;}
-  .admin-chart-card{border-radius:16px;}
-  .status-box.success{border-color:rgba(70,190,120,.38);background:#0b3021;}
-  .status-box.warning{border-color:rgba(221,178,70,.38);background:#342a10;}
-  .status-box.error{border-color:rgba(224,89,89,.38);background:#371719;}
-}
+/* FIX011: compact professional Pentadbir dropdown menu */
+.admin-menu-shell{position:relative!important;width:auto!important;display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:10px!important;flex-wrap:nowrap!important}
+.admin-menu-shell .admin-menu-toggle{width:auto!important;min-width:180px!important;background:linear-gradient(180deg,#124a70,#0b3655)!important;border:1px solid rgba(57,181,255,.34)!important;border-radius:10px!important}
+.admin-menu-shell .admin-menu-panel[hidden]{display:none!important}
+.admin-menu-shell .admin-menu-panel{position:absolute!important;top:calc(100% + 10px)!important;right:136px!important;z-index:1000!important;width:330px!important;max-width:calc(100vw - 32px)!important;margin:0!important;padding:10px!important;display:grid!important;grid-template-columns:1fr!important;gap:7px!important;border:1px solid rgba(52,174,240,.30)!important;border-radius:13px!important;background:rgba(3,25,42,.985)!important;box-shadow:0 22px 55px rgba(0,0,0,.50)!important;backdrop-filter:blur(14px)!important}
+.admin-menu-shell .admin-menu-panel .header-action-button,.admin-menu-shell .admin-menu-panel .admin-menu-link{width:100%!important;min-height:43px!important;margin:0!important;padding:10px 14px!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;text-align:left!important;border-radius:8px!important;box-shadow:none!important;font-size:12px!important}
+.admin-menu-shell .admin-menu-panel .header-action-button:hover,.admin-menu-shell .admin-menu-panel .admin-menu-link:hover{filter:brightness(1.16)!important;transform:translateX(2px)!important}
+.admin-menu-shell>.logout{width:auto!important;min-width:126px!important;min-height:46px!important;margin:0!important}
+.topbar{overflow:visible!important}
+@media(max-width:700px){.admin-menu-shell{width:100%!important;display:grid!important;grid-template-columns:1fr 1fr!important}.admin-menu-shell .admin-menu-toggle,.admin-menu-shell>.logout{width:100%!important;min-width:0!important}.admin-menu-shell .admin-menu-panel{top:calc(100% + 8px)!important;right:0!important;width:100%!important;max-width:none!important}}
+@media(max-width:460px){.admin-menu-shell{grid-template-columns:1fr!important}}
