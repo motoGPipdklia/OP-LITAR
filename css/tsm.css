@@ -998,3 +998,7 @@ body:not(.tsm-login-mode) .notification-button{background:#12314b;border:1px sol
 @media(max-width:1000px){.tsm-pro-nav{grid-template-columns:repeat(2,1fr)}.tsm-hero h1{font-size:28px}.tsm-hero-badge{display:none}}
 @media(max-width:700px){.tsm-pro-nav{grid-template-columns:1fr}.tsm-hero{padding:18px}.tsm-hero h1{font-size:24px}.tsm-hero p{font-size:12px}.tsm-hero-line{height:60px}.stat-card{min-height:92px}.tsm-eyebrow{font-size:9px}}
 @media print{.tsm-pro-nav,.tsm-hero{display:none!important}}
+
+/* FIX 003 — real SVG walkie-talkie icon */
+.tsm-login-radio .tsm-walkie-svg{width:44px;height:44px;display:block;fill:none;stroke:currentColor;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 7px rgba(41,181,255,.32))}
+@media(max-width:600px){.tsm-login-radio .tsm-walkie-svg{width:38px;height:38px}}
