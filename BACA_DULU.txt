@@ -1,18 +1,10 @@
-OP LITAR — FIX 20261019-002
+OP LITAR FIX 003 — PRINT SAMA SEPERTI VIEW
 
-Masalah dibetulkan:
-1. Carta Kenderaan Pengunjung kecil ketika pertama kali dipilih.
-2. Tidak perlu tekan SEMAK SEMULA untuk mendapatkan saiz besar.
-3. Trend Operasi dan Kenderaan Mengikut Lokasi menggunakan lebar penuh.
-4. BAS / MOTOKAR / MOTOSIKAL kekal berasingan.
-5. Panel Butiran Kenderaan kekal tetapi dipindahkan ke bawah carta.
-6. Cache lama ditukar kepada network-first dengan cache key baharu.
+Gantikan:
+/admin.html
+/js/admin.js
+/service-worker.js
 
-GANTI fail berikut di GitHub:
-- /admin.html
-- /service-worker.js
-- /css/admin.css
-- /js/admin.js
+FIX: CETAK kini mengambil snapshot terus daripada paparan komputer dan memotong snapshot secara seragam kepada halaman A4 landscape. Tiada re-layout khas print.
 
-Selepas GitHub Pages selesai deploy, buat Ctrl+Shift+R SEKALI pada admin.html.
-Selepas service worker baharu aktif, versi lama tidak sepatutnya kekal dalam cache.
+Selepas deploy: Ctrl+Shift+R sekali, jana Laporan Keseluruhan, kemudian CETAK. Chrome: Pages per sheet 1, Background graphics ON, Scale Default/100%.
