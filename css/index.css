@@ -1013,26 +1013,27 @@ body:has(#loginBox:not(.hidden)) #loginBox::before{
 }
 
 body:has(#loginBox:not(.hidden)) #loginBox::after{
-  content:"👤";
-  position:relative;
-  z-index:1;
-  display:grid;
-  place-items:center;
-  width:72px;
-  height:72px;
-  order:-1;
-  margin:0 auto 22px;
-  border:1px solid #1ea9ff;
-  border-radius:18px;
-  background:linear-gradient(180deg,rgba(8,72,116,.88),rgba(3,31,53,.94));
-  box-shadow:0 0 22px rgba(30,169,255,.28),inset 0 0 18px rgba(30,169,255,.08);
-  font-size:34px;
-  line-height:1;
+  content:none;
+  display:none;
 }
 
 /* Logo OP LITAR di atas kad tidak diduplikasi; logo/background asal kekal. */
 body:has(#loginBox:not(.hidden)) #loginBox .login-brand{
-  display:none !important;
+  display:flex !important;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  order:-2;
+  margin:0 auto 18px;
+}
+body:has(#loginBox:not(.hidden)) #loginBox .login-brand-logo{
+  display:block;
+  width:auto;
+  max-width:min(92%,440px);
+  max-height:118px;
+  margin:0 auto;
+  object-fit:contain;
+  filter:drop-shadow(0 6px 14px rgba(0,0,0,.72));
 }
 
 body:has(#loginBox:not(.hidden)) #loginBox label,
@@ -1120,7 +1121,24 @@ body:has(#loginBox:not(.hidden)) #loginBox .supervisor-link:hover{
 }
 
 /* Logo organisasi sudah terdapat pada visual portal; elak pendua dalam kad. */
-body:has(#loginBox:not(.hidden)) #loginBox .login-logos{display:none !important}
+body:has(#loginBox:not(.hidden)) #loginBox .login-logos{
+  display:flex !important;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  margin:22px auto 0;
+  padding-top:18px;
+  border-top:1px solid rgba(72,166,225,.28);
+}
+body:has(#loginBox:not(.hidden)) #loginBox .login-logo{
+  display:block;
+  width:auto;
+  max-width:min(90%,430px);
+  max-height:74px;
+  margin:0 auto;
+  object-fit:contain;
+  filter:drop-shadow(0 4px 10px rgba(0,0,0,.62));
+}
 
 @media(max-width:700px){
   body:has(#loginBox:not(.hidden)) #loginBox{
@@ -1128,8 +1146,5 @@ body:has(#loginBox:not(.hidden)) #loginBox .login-logos{display:none !important}
     margin:120px auto 40px;
     padding:28px 20px 24px;
     border-radius:16px;
-  }
-  body:has(#loginBox:not(.hidden)) #loginBox::after{
-    width:62px;height:62px;font-size:29px;border-radius:16px;margin-bottom:18px;
   }
 }
