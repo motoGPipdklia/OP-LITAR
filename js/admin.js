@@ -14247,14 +14247,166 @@ function salinanStatikLaporanHarianUntukEksport() {
 function cetakLaporanKeseluruhanHarian() {
   const clone = salinanStatikLaporanHarianUntukEksport();
   if (!clone) return alert("Sila jana laporan terlebih dahulu.");
+
   const tarikh = el("tarikhLaporanKeseluruhanHarian")?.value || hariIniMalaysia();
-  const cssLinks = [...document.querySelectorAll('link[rel="stylesheet"]')].map(link => `<link rel="stylesheet" href="${escapeHtml(new URL(link.getAttribute("href"), document.baseURI).href)}">`).join("\\n");
+  const cssLinks = [...document.querySelectorAll('link[rel="stylesheet"]')]
+    .map(link => `<link rel="stylesheet" href="${escapeHtml(new URL(link.getAttribute("href"), document.baseURI).href)}">`)
+    .join("\n");
+
+  /* FIX 007 — susunan khas CETAK sahaja.
+     1) Peta: JENIS TUGAS + gambar peta dalam SATU halaman.
+     2) Pengunjung: Trend satu halaman, Pecahan Lokasi satu halaman.
+     3) Kenderaan: Trend satu halaman, Pecahan Lokasi satu halaman.
+     MUAT TURUN PDF tidak disentuh. */
+  function pecahKadDuaHalaman(selectorKad, selectorBlok, kelasTambahan) {
+    const kad = clone.querySelector(selectorKad);
+    if (!kad) return;
+    const blok = [...kad.querySelectorAll(selectorBlok)];
+    if (blok.length < 2) return;
+
+    const halamanTrend = kad.cloneNode(true);
+    const halamanLokasi = kad.cloneNode(true);
+
+    [...halamanTrend.querySelectorAll(selectorBlok)].forEach((n, i) => {
+      if (i !== 0) n.remove();
+    });
+    [...halamanLokasi.querySelectorAll(selectorBlok)].forEach((n, i) => {
+      if (i !== 1) n.remove();
+    });
+
+    halamanTrend.classList.add("print-split-page", `${kelasTambahan}-trend-page`);
+    halamanLokasi.classList.add("print-split-page", `${kelasTambahan}-location-page`);
+
+    /* Pada halaman kedua, kekalkan tajuk kad tetapi ubah keterangan supaya jelas. */
+    const pTrend = halamanTrend.querySelector(".admin-chart-card-heading .muted");
+    const pLokasi = halamanLokasi.querySelector(".admin-chart-card-heading .muted");
+    if (pTrend) pTrend.textContent = "TREND OPERASI — JUMLAH TERKUMPUL MENGIKUT MASA";
+    if (pLokasi) pLokasi.textContent = "PECAHAN LOKASI";
+
+    kad.replaceWith(halamanTrend, halamanLokasi);
+  }
+
+  pecahKadDuaHalaman(
+    ".admin-visitor-chart-card",
+    ".admin-visitor-chart-block",
+    "visitor"
+  );
+  pecahKadDuaHalaman(
+    ".admin-vehicle-chart-card",
+    ".admin-vehicle-chart-block",
+    "vehicle"
+  );
+
   const bgBody = getComputedStyle(document.body).backgroundColor || "#111";
   const w = window.open("", "_blank", "width=1500,height=950");
   if (!w) return alert("Pelayar menghalang tetingkap cetak. Benarkan pop-up dan cuba semula.");
+
   w.document.open();
-  w.document.write(`<!DOCTYPE html><html lang="ms"><head><meta charset="UTF-8"><title>Laporan Keseluruhan Harian ${escapeHtml(formatTarikhMalaysia(tarikh))}</title>${cssLinks}<style>
-  @page{size:A4 landscape;margin:7mm}html,body{margin:0!important;padding:0!important;background:${escapeHtml(bgBody)}!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}#kandunganCetak{width:100%!important;max-width:none!important;margin:0!important}#kandunganCetak *{box-sizing:border-box!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}#kandunganCetak img{max-width:100%!important;height:auto!important;object-fit:contain!important}.admin-chart-card{break-inside:avoid-page!important;page-break-inside:avoid!important}@media print{.admin-chart-card{break-before:page!important;page-break-before:always!important;break-inside:avoid-page!important;page-break-inside:avoid!important;width:100%!important;overflow:hidden!important}.admin-chart-card:first-of-type{break-before:auto!important;page-break-before:auto!important}.admin-chart-card img{max-height:150mm!important;width:auto!important;max-width:100%!important;margin:auto!important}}</style></head><body><main id="kandunganCetak">${clone.innerHTML}</main><script>window.addEventListener("load",function(){setTimeout(function(){window.focus();window.print();},800)});<\\/script></body></html>`);
+  w.document.write(`<!DOCTYPE html><html lang="ms"><head>
+    <meta charset="UTF-8">
+    <title>Laporan Keseluruhan Harian ${escapeHtml(formatTarikhMalaysia(tarikh))}</title>
+    ${cssLinks}
+    <style>
+      @page{size:A4 landscape;margin:7mm}
+      html,body{
+        margin:0!important;padding:0!important;background:${escapeHtml(bgBody)}!important;
+        -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important
+      }
+      #kandunganCetak{width:100%!important;max-width:none!important;margin:0!important}
+      #kandunganCetak *{box-sizing:border-box!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+      #kandunganCetak img{max-width:100%!important;height:auto!important;object-fit:contain!important}
+
+      /* Tajuk halaman pertama putih. */
+      #kandunganCetak .laporan-harian-kepala h2,
+      #kandunganCetak .laporan-harian-kepala h3{color:#fff!important}
+
+      /* Semua kad utama tidak boleh terpotong di tengah. */
+      #kandunganCetak .admin-chart-card,
+      #kandunganCetak .print-split-page{
+        break-inside:avoid-page!important;
+        page-break-inside:avoid!important;
+      }
+
+      /* PETA: filter Jenis Tugas + peta mesti muat bersama dalam satu halaman. */
+      #kandunganCetak .admin-operation-map-card{
+        height:190mm!important;
+        max-height:190mm!important;
+        overflow:hidden!important;
+      }
+      #kandunganCetak .admin-operation-map-card .section-heading{margin-bottom:3mm!important}
+      #kandunganCetak .admin-operation-map-card .admin-map-task-filter{
+        margin:0 0 3mm 0!important;
+        min-height:13mm!important;
+      }
+      #kandunganCetak .admin-operation-map-card .admin-operation-map-layout,
+      #kandunganCetak .admin-operation-map-card .admin-operation-map-stage{
+        display:block!important;width:100%!important;max-width:none!important;
+        height:145mm!important;max-height:145mm!important;overflow:hidden!important;
+      }
+      #kandunganCetak .admin-operation-map-card .admin-operation-map-viewport,
+      #kandunganCetak .admin-operation-map-card .admin-operation-map-canvas{
+        width:100%!important;height:139mm!important;max-height:139mm!important;
+        overflow:hidden!important;display:flex!important;align-items:center!important;justify-content:center!important;
+        transform:none!important;
+      }
+      #kandunganCetak .admin-operation-map-card .admin-operation-map-image{
+        display:block!important;width:auto!important;height:auto!important;
+        max-width:100%!important;max-height:137mm!important;object-fit:contain!important;
+        position:static!important;transform:none!important;margin:0 auto!important;
+      }
+      #kandunganCetak .admin-operation-map-card .admin-map-marker-layer,
+      #kandunganCetak .admin-operation-map-card .admin-map-footer{display:none!important}
+
+      /* Halaman Trend/Pecahan: satu blok menggunakan seluruh ruang halaman. */
+      #kandunganCetak .print-split-page{
+        height:190mm!important;max-height:190mm!important;overflow:hidden!important;
+      }
+      #kandunganCetak .print-split-page .admin-visitor-layout,
+      #kandunganCetak .print-split-page .admin-vehicle-layout,
+      #kandunganCetak .print-split-page .admin-visitor-chart-panel,
+      #kandunganCetak .print-split-page .admin-vehicle-chart-panel{
+        display:block!important;width:100%!important;max-width:none!important;height:auto!important;
+      }
+      #kandunganCetak .print-split-page .admin-visitor-chart-block,
+      #kandunganCetak .print-split-page .admin-vehicle-chart-block{
+        width:100%!important;max-width:none!important;height:155mm!important;max-height:155mm!important;
+        overflow:hidden!important;
+      }
+      #kandunganCetak .print-split-page .admin-chart-canvas-wrap{
+        width:100%!important;height:132mm!important;max-height:132mm!important;
+        display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important;
+      }
+      #kandunganCetak .print-split-page .admin-chart-canvas-wrap img{
+        width:auto!important;height:auto!important;max-width:100%!important;max-height:130mm!important;
+        object-fit:contain!important;margin:auto!important;
+      }
+      #kandunganCetak .print-split-page .admin-visitor-location-total,
+      #kandunganCetak .print-split-page .admin-vehicle-location-total,
+      #kandunganCetak .print-split-page .admin-visitor-location-hint,
+      #kandunganCetak .print-split-page .admin-vehicle-location-hint{display:none!important}
+
+      @media print{
+        #kandunganCetak .admin-chart-card,
+        #kandunganCetak .print-split-page{
+          break-before:page!important;page-break-before:always!important;
+          break-inside:avoid-page!important;page-break-inside:avoid!important;
+          width:100%!important;
+        }
+        #kandunganCetak .admin-chart-card:first-of-type{
+          break-before:auto!important;page-break-before:auto!important;
+        }
+      }
+    </style>
+  </head><body>
+    <main id="kandunganCetak">${clone.innerHTML}</main>
+    <script>
+      window.addEventListener("load",function(){
+        const imgs=[...document.images];
+        Promise.all(imgs.map(i=>i.complete?Promise.resolve():new Promise(r=>{i.onload=r;i.onerror=r;})))
+          .then(()=>setTimeout(function(){window.focus();window.print();},900));
+      });
+    <\/script>
+  </body></html>`);
   w.document.close();
 }
 
