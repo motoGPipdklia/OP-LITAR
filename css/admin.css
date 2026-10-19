@@ -5265,3 +5265,7 @@ body.marker-dragging *{
 /* FIX005: tutup login selepas autentikasi berjaya */
 #loginPage.hidden{display:none!important;}
 #dashboard:not(.hidden){display:block!important;}
+/* FIX006 */
+.hidden,#loginPage.hidden,#dashboard.hidden{display:none!important}
+#dashboard{display:none}
+#dashboard.admin-authenticated{display:block!important}
