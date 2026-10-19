@@ -14245,139 +14245,41 @@ function salinanStatikLaporanHarianUntukEksport() {
 }
 
 function cetakLaporanKeseluruhanHarian() {
-  const asal = el("kandunganLaporanKeseluruhanHarian");
   const clone = salinanStatikLaporanHarianUntukEksport();
-  if (!clone || !asal) return alert("Sila jana laporan terlebih dahulu.");
-
+  if (!clone) return alert("Sila jana laporan terlebih dahulu.");
   const tarikh = el("tarikhLaporanKeseluruhanHarian")?.value || hariIniMalaysia();
-  const cssLinks = [...document.querySelectorAll('link[rel="stylesheet"]')]
-    .map(link => `<link rel="stylesheet" href="${escapeHtml(new URL(link.getAttribute("href"), document.baseURI).href)}">`)
-    .join("\n");
-
-  const lebarAsal = Math.max(900, Math.round(asal.getBoundingClientRect().width));
+  const cssLinks = [...document.querySelectorAll('link[rel="stylesheet"]')].map(link => `<link rel="stylesheet" href="${escapeHtml(new URL(link.getAttribute("href"), document.baseURI).href)}">`).join("\\n");
   const bgBody = getComputedStyle(document.body).backgroundColor || "#111";
   const w = window.open("", "_blank", "width=1500,height=950");
   if (!w) return alert("Pelayar menghalang tetingkap cetak. Benarkan pop-up dan cuba semula.");
-
   w.document.open();
   w.document.write(`<!DOCTYPE html><html lang="ms"><head><meta charset="UTF-8"><title>Laporan Keseluruhan Harian ${escapeHtml(formatTarikhMalaysia(tarikh))}</title>${cssLinks}<style>
-    @page{size:A4 landscape;margin:8mm}
-    html,body{margin:0!important;padding:0!important;background:${escapeHtml(bgBody)}!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-    body{padding:12px!important}
-    #kandunganCetak{box-sizing:border-box!important;width:${lebarAsal}px!important;max-width:none!important;margin:0 auto!important}
-    #kandunganCetak *{box-sizing:border-box!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-    #kandunganCetak img{max-width:100%!important;height:auto!important;object-fit:contain!important}
-    #kandunganCetak .admin-visitor-detail-panel,
-    #kandunganCetak .admin-vehicle-detail-panel,
-    #kandunganCetak .admin-attendance-list-panel,
-    #kandunganCetak .admin-map-location-panel,
-    #kandunganCetak .admin-vvip-detail-panel,
-    #kandunganCetak .admin-incident-detail-panel{display:none!important}
-    #kandunganCetak .admin-visitor-layout,
-    #kandunganCetak .admin-vehicle-layout,
-    #kandunganCetak .admin-attendance-layout,
-    #kandunganCetak .admin-operation-map-layout,
-    #kandunganCetak .admin-vvip-layout,
-    #kandunganCetak .admin-incident-layout{display:block!important}
-    #kandunganCetak .admin-visitor-chart-panel,
-    #kandunganCetak .admin-vehicle-chart-panel,
-    #kandunganCetak .admin-attendance-chart-panel,
-    #kandunganCetak .admin-operation-map-stage,
-    #kandunganCetak .admin-vvip-list-panel,
-    #kandunganCetak .admin-incident-chart-panel{width:100%!important;max-width:none!important}
-    @media print{
-      body{padding:0!important}
-      #kandunganCetak{margin:0!important}
-      .admin-chart-card,.admin-visitor-chart-block,.admin-vehicle-chart-block{break-inside:avoid-page;page-break-inside:avoid}
-    }
-  </style></head><body><main id="kandunganCetak">${clone.innerHTML}</main><script>
-    window.addEventListener("load",function(){setTimeout(function(){window.focus();window.print();},900)});
-  <\/script></body></html>`);
+  @page{size:A4 landscape;margin:7mm}html,body{margin:0!important;padding:0!important;background:${escapeHtml(bgBody)}!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}#kandunganCetak{width:100%!important;max-width:none!important;margin:0!important}#kandunganCetak *{box-sizing:border-box!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}#kandunganCetak img{max-width:100%!important;height:auto!important;object-fit:contain!important}.admin-chart-card{break-inside:avoid-page!important;page-break-inside:avoid!important}@media print{.admin-chart-card{break-before:page!important;page-break-before:always!important;break-inside:avoid-page!important;page-break-inside:avoid!important;width:100%!important;overflow:hidden!important}.admin-chart-card:first-of-type{break-before:auto!important;page-break-before:auto!important}.admin-chart-card img{max-height:150mm!important;width:auto!important;max-width:100%!important;margin:auto!important}}</style></head><body><main id="kandunganCetak">${clone.innerHTML}</main><script>window.addEventListener("load",function(){setTimeout(function(){window.focus();window.print();},800)});<\\/script></body></html>`);
   w.document.close();
 }
 
 async function muatTurunPdfLaporanKeseluruhanHarian() {
   const asal = el("kandunganLaporanKeseluruhanHarian");
-  if (!asal) return alert("Sila jana laporan terlebih dahulu.");
+  if (!asal || !laporanHarianSudahDijana) return alert("Sila jana laporan terlebih dahulu.");
   if (!window.html2canvas || !window.jspdf?.jsPDF) return alert("Modul PDF belum dimuatkan. Pastikan internet tersedia dan muat semula halaman.");
-
-  const btn = el("btnPdfLaporanKeseluruhanHarian");
-  const tarikh = el("tarikhLaporanKeseluruhanHarian")?.value || hariIniMalaysia();
-  const statusId = "statusLaporanKeseluruhanHarian";
-
+  const btn=el("btnPdfLaporanKeseluruhanHarian"), tarikh=el("tarikhLaporanKeseluruhanHarian")?.value||hariIniMalaysia(), statusId="statusLaporanKeseluruhanHarian";
+  let host=null;
   try {
-    if (btn) { btn.disabled = true; btn.textContent = "SEDANG MENJANA PDF..."; }
-    paparMesej(statusId, "Sedang menjana PDF sama seperti paparan Laporan Keseluruhan...", "warning");
-
-    /* FIX 009 — tangkap terus paparan FIX 007 yang sedang dilihat.
-       Tiada clone / re-layout khas PDF supaya saiz, grid, warna, font,
-       carta dan jarak kekal sama seperti paparan dalam sistem. */
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-
-    const rect = asal.getBoundingClientRect();
-    const lebar = Math.max(1, Math.round(rect.width));
-    const tinggi = Math.max(1, Math.round(asal.scrollHeight));
-    const bg = getComputedStyle(document.body).backgroundColor || "#0f0f0f";
-
-    const canvas = await window.html2canvas(asal, {
-      scale: 1.35,
-      useCORS: true,
-      backgroundColor: bg,
-      logging: false,
-      width: lebar,
-      height: tinggi,
-      windowWidth: window.innerWidth,
-      windowHeight: window.innerHeight,
-      scrollX: 0,
-      scrollY: -window.scrollY
-    });
-
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4", compress: true });
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const margin = 7;
-    const usableW = pageW - margin * 2;
-    const usableH = pageH - margin * 2;
-
-    /* Skala seluruh paparan secara SERAGAM mengikut lebar A4.
-       Jangan ubah saiz setiap kad/carta secara berasingan. */
-    const pxPerMm = canvas.width / usableW;
-    const pagePxH = Math.max(1, Math.floor(usableH * pxPerMm));
-
-    let y = 0;
-    let page = 0;
-    while (y < canvas.height) {
-      const h = Math.min(pagePxH, canvas.height - y);
-      const slice = document.createElement("canvas");
-      slice.width = canvas.width;
-      slice.height = h;
-      const ctx = slice.getContext("2d");
-      ctx.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
-
-      if (page > 0) pdf.addPage("a4", "landscape");
-      pdf.addImage(
-        slice.toDataURL("image/jpeg", 0.95),
-        "JPEG",
-        margin,
-        margin,
-        usableW,
-        h / pxPerMm,
-        undefined,
-        "FAST"
-      );
-      y += h;
-      page++;
+    if(btn){btn.disabled=true;btn.textContent="SEDANG MENJANA PDF...";} paparMesej(statusId,"Sedang menjana PDF tanpa memotong carta...","warning");
+    const clone=salinanStatikLaporanHarianUntukEksport(); if(!clone) throw new Error("Paparan laporan tidak tersedia.");
+    host=document.createElement("div"); host.style.cssText=`position:fixed;left:-100000px;top:0;width:${Math.max(1000,Math.round(asal.getBoundingClientRect().width))}px;z-index:-1;background:${getComputedStyle(document.body).backgroundColor||"#0f0f0f"};padding:0;margin:0;`; host.appendChild(clone); document.body.appendChild(host);
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+    const cards=[...clone.querySelectorAll(".admin-chart-card")]; if(!cards.length) throw new Error("Tiada carta ditemui untuk laporan.");
+    const {jsPDF}=window.jspdf; const pdf=new jsPDF({orientation:"landscape",unit:"mm",format:"a4",compress:true}); const pageW=pdf.internal.pageSize.getWidth(),pageH=pdf.internal.pageSize.getHeight(),margin=7,usableW=pageW-margin*2,usableH=pageH-margin*2;
+    /* Ringkasan atas pada halaman pertama. */
+    const first=cards[0]; const firstTop=first.getBoundingClientRect().top-clone.getBoundingClientRect().top; if(firstTop>10){const introCanvas=await window.html2canvas(clone,{scale:1.35,useCORS:true,backgroundColor:getComputedStyle(document.body).backgroundColor||"#0f0f0f",logging:false,height:Math.ceil(firstTop)}); const sc=Math.min(usableW/introCanvas.width,usableH/introCanvas.height); pdf.addImage(introCanvas.toDataURL("image/jpeg",.96),"JPEG",margin,margin,introCanvas.width*sc,introCanvas.height*sc,undefined,"FAST");}
+    for(let i=0;i<cards.length;i++){
+      const c=await window.html2canvas(cards[i],{scale:1.35,useCORS:true,allowTaint:false,backgroundColor:getComputedStyle(document.body).backgroundColor||"#0f0f0f",logging:false});
+      pdf.addPage("a4","landscape"); const sc=Math.min(usableW/c.width,usableH/c.height),wmm=c.width*sc,hmm=c.height*sc,x=(pageW-wmm)/2,y=(pageH-hmm)/2; pdf.addImage(c.toDataURL("image/jpeg",.96),"JPEG",x,y,wmm,hmm,undefined,"FAST");
     }
-
-    pdf.save(`SKPO_LAPORAN_KESELURUHAN_HARIAN_${tarikh}.pdf`);
-    paparMesej(statusId, `PDF laporan ${escapeHtml(formatTarikhMalaysia(tarikh))} berjaya dijana sama seperti paparan sistem.`, "success");
-  } catch (error) {
-    console.error("PDF laporan harian gagal:", error);
-    paparMesej(statusId, `Gagal menjana PDF: ${escapeHtml(error?.message || "Ralat tidak diketahui.")}`, "error");
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = "MUAT TURUN PDF"; }
-  }
+    host.remove();host=null; pdf.save(`SKPO_LAPORAN_KESELURUHAN_HARIAN_${tarikh}.pdf`); paparMesej(statusId,`PDF ${escapeHtml(formatTarikhMalaysia(tarikh))} berjaya dijana tanpa memotong carta.`,"success");
+  } catch(error){if(host)host.remove();console.error("PDF laporan harian gagal:",error);paparMesej(statusId,`Gagal menjana PDF: ${escapeHtml(error?.message||"Ralat tidak diketahui.")}`,"error");}
+  finally{if(btn){btn.disabled=false;btn.textContent="MUAT TURUN PDF";}}
 }
 
 /* ================================================================
