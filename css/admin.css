@@ -4769,3 +4769,12 @@ body.marker-dragging *{
   min-width:1320px;
 }
 
+
+/* FIX 20261019 CACHE + CARTA KENDERAAN FULL WIDTH */
+.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-layout{display:grid!important;grid-template-columns:minmax(0,1fr)!important;width:100%!important;max-width:none!important;gap:16px!important;align-items:stretch!important}
+.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-chart-panel,.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-chart-block,.admin-chart-card[data-chart-section="KENDERAAN"] .admin-chart-canvas-wrap{width:100%!important;max-width:none!important;min-width:0!important;box-sizing:border-box!important;margin-left:0!important;margin-right:0!important}
+.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-time-canvas{height:390px!important;min-height:390px!important}
+.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-location-canvas{height:520px!important;min-height:520px!important;max-height:none!important}
+.admin-chart-card[data-chart-section="KENDERAAN"] #canvasCartaKenderaan,.admin-chart-card[data-chart-section="KENDERAAN"] #canvasCartaKenderaanLokasi{display:block!important;width:100%!important;max-width:none!important;height:100%!important}
+.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-detail-panel{width:100%!important;max-width:none!important;height:auto!important;min-height:320px!important}
+@media(max-width:620px){.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-time-canvas{height:300px!important;min-height:300px!important}.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-location-canvas{height:400px!important;min-height:400px!important}}
