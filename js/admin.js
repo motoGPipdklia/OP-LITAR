@@ -8922,48 +8922,53 @@ function lokasiLaporanPengunjungPentadbir(item) {
 
 
 function ringkasanPengunjungMengikutLokasiPentadbir() {
-  const kumpulan =
-    new Map();
+  const kumpulan = new Map();
 
   senaraiPengunjungCartaPentadbir()
     .forEach(item => {
       const lokasi =
-        lokasiLaporanPengunjungPentadbir(
-          item
-        );
+        lokasiLaporanPengunjungPentadbir(item);
 
       const jumlah =
-        nilaiJumlahPengunjungPentadbir(
-          item
-        );
+        nilaiJumlahPengunjungPentadbir(item);
 
       const sediaAda =
         kumpulan.get(lokasi) || {
           lokasi,
-          jumlah: 0,
+          datang: 0,
+          keluar: 0,
+          baki: 0,
           bilLaporan: 0
         };
 
-      sediaAda.jumlah += jumlah;
+      /*
+        Nilai positif = pengunjung DATANG.
+        Nilai negatif = pengunjung KELUAR / BEREDAR KELUAR.
+        Untuk carta, nilai keluar disimpan sebagai nombor positif
+        supaya tiada lagi bar negatif pada paksi carta.
+      */
+      if (jumlah >= 0) {
+        sediaAda.datang += jumlah;
+      } else {
+        sediaAda.keluar += Math.abs(jumlah);
+      }
+
+      sediaAda.baki =
+        sediaAda.datang -
+        sediaAda.keluar;
+
       sediaAda.bilLaporan += 1;
 
-      kumpulan.set(
-        lokasi,
-        sediaAda
-      );
+      kumpulan.set(lokasi, sediaAda);
     });
 
   return Array
-    .from(
-      kumpulan.values()
-    )
+    .from(kumpulan.values())
     .sort(
       (a, b) =>
-        b.jumlah - a.jumlah ||
-        a.lokasi.localeCompare(
-          b.lokasi,
-          "ms"
-        )
+        b.datang - a.datang ||
+        b.keluar - a.keluar ||
+        a.lokasi.localeCompare(b.lokasi, "ms")
     );
 }
 
@@ -9005,33 +9010,44 @@ function paparCartaPengunjungLokasiPentadbir() {
     ringkasanPengunjungMengikutLokasiPentadbir();
 
   const labels =
-    ringkasan.map(
-      item => item.lokasi
-    );
+    ringkasan.map(item => item.lokasi);
 
-  const nilai =
-    ringkasan.map(
-      item => item.jumlah
-    );
+  const nilaiDatang =
+    ringkasan.map(item => item.datang);
 
-  const jumlahKeseluruhan =
+  const nilaiKeluar =
+    ringkasan.map(item => item.keluar);
+
+  const jumlahDatang =
     ringkasan.reduce(
-      (jumlah, item) =>
-        jumlah + item.jumlah,
+      (jumlah, item) => jumlah + item.datang,
       0
     );
 
-  if (
-    el(
-      "jumlahKeseluruhanPengunjungLokasiPentadbir"
-    )
-  ) {
-    el(
-      "jumlahKeseluruhanPengunjungLokasiPentadbir"
-    ).textContent =
-      jumlahKeseluruhan.toLocaleString(
-        "ms-MY"
-      );
+  const jumlahKeluar =
+    ringkasan.reduce(
+      (jumlah, item) => jumlah + item.keluar,
+      0
+    );
+
+  const bakiKeseluruhan =
+    jumlahDatang - jumlahKeluar;
+
+  /*
+    Kekalkan kotak JUMLAH KESELURUHAN sedia ada sebagai baki semasa.
+    Carta di bawah pula membezakan DATANG dan KELUAR.
+  */
+  const jumlahBox =
+    el("jumlahKeseluruhanPengunjungLokasiPentadbir");
+
+  if (jumlahBox) {
+    jumlahBox.textContent =
+      bakiKeseluruhan.toLocaleString("ms-MY");
+
+    jumlahBox.title =
+      `Datang: ${jumlahDatang.toLocaleString("ms-MY")} | ` +
+      `Keluar: ${jumlahKeluar.toLocaleString("ms-MY")} | ` +
+      `Baki: ${bakiKeseluruhan.toLocaleString("ms-MY")}`;
   }
 
   kemusnahkanCartaPentadbir(
@@ -9049,15 +9065,17 @@ function paparCartaPengunjungLokasiPentadbir() {
 
           datasets: [
             {
-              label:
-                "Jumlah Pengunjung Mengikut Lokasi",
-
-              data: nilai,
-
+              label: "PENGUNJUNG DATANG",
+              data: nilaiDatang,
               borderWidth: 2,
-
               borderRadius: 6,
-
+              borderSkipped: false
+            },
+            {
+              label: "PENGUNJUNG KELUAR",
+              data: nilaiKeluar,
+              borderWidth: 2,
+              borderRadius: 6,
               borderSkipped: false
             }
           ]
@@ -9085,8 +9103,7 @@ function paparCartaPengunjungLokasiPentadbir() {
               },
               title: {
                 display: true,
-                text:
-                  "Jumlah Pengunjung",
+                text: "Jumlah Pengunjung",
                 color: "#d8d8d8"
               }
             },
@@ -9167,13 +9184,31 @@ function paparCartaPengunjungLokasiPentadbir() {
                       context.dataIndex
                     ];
 
+                  const nilai =
+                    Number(context.raw || 0)
+                      .toLocaleString("ms-MY");
+
+                  return (
+                    `${context.dataset.label}: ${nilai}`
+                  );
+                },
+
+                afterBody(context) {
+                  const indeks =
+                    context?.[0]?.dataIndex;
+
+                  const rekod =
+                    ringkasan[indeks];
+
+                  if (!rekod) return [];
+
                   return [
-                    `${Number(context.raw || 0).toLocaleString("ms-MY")} pengunjung`,
-                    `${rekod?.bilLaporan || 0} laporan`
+                    `BAKI DI LOKASI: ${rekod.baki.toLocaleString("ms-MY")}`,
+                    `${rekod.bilLaporan || 0} REKOD/LAPORAN`
                   ];
                 },
 
-                afterLabel() {
+                footer() {
                   return (
                     "Klik untuk papar butiran lokasi ini"
                   );
@@ -9184,12 +9219,6 @@ function paparCartaPengunjungLokasiPentadbir() {
         }
       }
     );
-
-  /*
-    Highlight lokasi dipilih pada senarai label
-    melalui tajuk/panel butiran. Chart.js tidak
-    memerlukan perubahan data asal.
-  */
 }
 
 
