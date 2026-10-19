@@ -4770,137 +4770,328 @@ body.marker-dragging *{
 }
 
 
-/* =========================================================
-   FIX 009 - LOGIN PENTADBIR PROFESSIONAL (BLUE / BLACK)
-   Scope login sahaja. Dashboard tidak disentuh.
-   ========================================================= */
-#loginPage.login{
-  min-height:100vh;
-  padding:28px 18px;
-  background:
-    linear-gradient(rgba(0,8,18,.64),rgba(0,4,10,.72)),
-    url("../images/background-portal.jpg") center center / cover no-repeat fixed;
+/* ================================================================
+   FIX 20261019-002 — CARTA KENDERAAN TERUS BESAR APABILA DIPILIH
+   Rule ini sengaja diletakkan PALING BAWAH supaya mengatasi rule lama.
+================================================================ */
+.admin-chart-grid > .admin-chart-card[data-chart-section="KENDERAAN"]{
+  grid-column:1 / -1 !important;
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
 }
 
-#loginPage > .card{
-  position:relative;
-  overflow:hidden;
-  width:min(94vw,640px);
-  padding:34px 36px 32px;
-  border:1px solid rgba(31,169,255,.78);
-  border-radius:22px;
-  background:
-    linear-gradient(145deg,rgba(8,39,68,.97),rgba(2,20,36,.98) 58%,rgba(5,30,52,.98));
-  box-shadow:0 24px 70px rgba(0,0,0,.58),0 0 34px rgba(0,145,255,.12),inset 0 1px 0 rgba(255,255,255,.05);
-  backdrop-filter:blur(10px);
+.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-layout{
+  display:block !important;
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  margin-top:14px !important;
 }
 
-#loginPage > .card::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  background:repeating-linear-gradient(135deg,transparent 0 76px,rgba(35,157,235,.045) 76px 79px,transparent 79px 152px);
+.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-chart-panel{
+  display:block !important;
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  height:auto !important;
+  box-sizing:border-box !important;
+  padding:14px !important;
+  margin:0 !important;
 }
 
-#loginPage > .card > *{
-  position:relative;
-  z-index:1;
+.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-chart-block,
+.admin-chart-card[data-chart-section="KENDERAAN"] .admin-chart-canvas-wrap{
+  display:block !important;
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+  margin-left:0 !important;
+  margin-right:0 !important;
 }
 
-#loginPage .admin-login-brand{
-  margin:0 0 22px;
+.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-time-canvas{
+  height:430px !important;
+  min-height:430px !important;
 }
 
-#loginPage .admin-login-logo{
-  max-width:min(100%,500px);
-  max-height:155px;
-  filter:drop-shadow(0 8px 18px rgba(0,0,0,.65));
+.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-location-canvas{
+  height:560px !important;
+  min-height:560px !important;
+  max-height:none !important;
 }
 
-#loginPage .logo{
-  margin:2px 0 8px;
-  color:#fff;
-  font-size:34px;
-  font-weight:900;
-  letter-spacing:2px;
-  text-shadow:0 3px 16px rgba(0,0,0,.5);
+.admin-chart-card[data-chart-section="KENDERAAN"] #canvasCartaKenderaan,
+.admin-chart-card[data-chart-section="KENDERAAN"] #canvasCartaKenderaanLokasi{
+  display:block !important;
+  width:100% !important;
+  max-width:none !important;
+  height:100% !important;
 }
 
-#loginPage #tajukLogin{
-  margin:0 0 28px;
-  color:#c8d8e8;
-  font-size:16px;
+/* Butiran kekal, tetapi turun ke bawah supaya tidak mengecilkan carta. */
+.admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-detail-panel{
+  display:flex !important;
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  height:auto !important;
+  min-height:320px !important;
+  margin-top:16px !important;
+  box-sizing:border-box !important;
 }
 
-#loginPage input{
-  height:58px;
-  margin:0 0 12px;
-  padding:0 17px;
-  border:1px solid rgba(36,158,226,.55);
-  border-radius:12px;
-  background:rgba(1,17,30,.84);
-  color:#fff;
-  font-size:16px;
-  box-shadow:inset 0 0 18px rgba(0,0,0,.18);
+@media(max-width:700px){
+  .admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-time-canvas{
+    height:320px !important;
+    min-height:320px !important;
+  }
+  .admin-chart-card[data-chart-section="KENDERAAN"] .admin-vehicle-location-canvas{
+    height:420px !important;
+    min-height:420px !important;
+  }
 }
 
-#loginPage input::placeholder{color:#8faac0;opacity:1;}
-#loginPage input:focus{
-  border-color:#24b5ff;
-  box-shadow:0 0 0 3px rgba(36,181,255,.13),0 0 22px rgba(36,181,255,.08);
+/* =====================================================================
+   OP LITAR FIX 009 — PROFESSIONAL DASHBOARD / MOCKUP MATCH
+   Paparan desktop sahaja. Semua fungsi/ID/carta/PDF FIX 007 dikekalkan.
+===================================================================== */
+@media screen and (min-width:1100px){
+  :root{
+    --dash-bg:#07101d;
+    --dash-bg-soft:#0a1626;
+    --dash-panel:#0d1b2d;
+    --dash-panel-2:#102238;
+    --dash-line:rgba(111,164,220,.18);
+    --dash-line-strong:rgba(68,192,255,.28);
+    --dash-text:#f5f8fc;
+    --dash-muted:#91a6bd;
+    --dash-cyan:#35c7ff;
+    --dash-blue:#2587e8;
+    --dash-gold:#e4bb39;
+  }
+
+  html,body{background:var(--dash-bg)!important;}
+  body{font-family:Inter,Segoe UI,Arial,sans-serif;}
+  .dashboard{
+    background:
+      radial-gradient(circle at 8% 0%,rgba(37,135,232,.12),transparent 27%),
+      radial-gradient(circle at 92% 6%,rgba(53,199,255,.08),transparent 23%),
+      linear-gradient(180deg,#07111f 0%,#07101c 100%);
+  }
+
+  /* HEADER: padat, tiada ruang kosong besar di sebelah kiri. */
+  .topbar{
+    position:relative;
+    top:auto;
+    z-index:10;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-areas:"identity logout" "menu menu";
+    gap:18px 22px;
+    min-height:0;
+    padding:28px 32px 24px;
+    border-bottom:1px solid var(--dash-line);
+    background:linear-gradient(180deg,rgba(10,24,41,.98),rgba(7,17,30,.97));
+    box-shadow:0 14px 38px rgba(0,0,0,.22);
+  }
+  .topbar>div:first-child{
+    grid-area:identity;
+    padding:0;
+    align-self:center;
+  }
+  .topbar>div:first-child::before{
+    content:"OP LITAR  /  OPERATIONS CONTROL";
+    display:block;
+    margin-bottom:8px;
+    color:var(--dash-cyan);
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.18em;
+  }
+  .topbar .brand{
+    margin:0;
+    color:var(--dash-text);
+    font-size:30px;
+    line-height:1.05;
+    font-weight:900;
+    letter-spacing:-.025em;
+  }
+  #adminName{margin-top:7px;color:var(--dash-muted);font-size:13px;}
+
+  .topbar-actions.admin-menu-shell{
+    grid-area:menu;
+    display:contents;
+  }
+  .admin-menu-toggle{display:none!important;}
+  #menuPentadbir.admin-menu-panel,
+  #menuPentadbir.admin-menu-panel[hidden]{
+    grid-area:menu;
+    display:grid!important;
+    grid-template-columns:repeat(6,minmax(135px,1fr));
+    gap:10px;
+    width:100%;
+    margin:0;
+    padding:0;
+    border:0;
+    background:transparent;
+    box-shadow:none;
+  }
+  #menuPentadbir .header-action-button,
+  #menuPentadbir .nav-button{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-height:76px;
+    padding:12px 10px 11px;
+    border:1px solid var(--dash-line);
+    border-radius:13px;
+    background:linear-gradient(145deg,#12263e,#0d1d30)!important;
+    color:#eef6ff!important;
+    font-size:10px;
+    line-height:1.2;
+    font-weight:800;
+    letter-spacing:.015em;
+    box-shadow:0 8px 22px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.035);
+    transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;
+  }
+  #menuPentadbir .header-action-button::before,
+  #menuPentadbir .nav-button::before{
+    display:block;
+    color:var(--dash-cyan);
+    font-size:22px;
+    line-height:1;
+    font-weight:400;
+  }
+  #menuPentadbir .header-action-button:hover,
+  #menuPentadbir .nav-button:hover{
+    transform:translateY(-2px);
+    border-color:var(--dash-line-strong);
+    box-shadow:0 12px 28px rgba(0,0,0,.25),0 0 0 1px rgba(53,199,255,.05);
+    filter:none;
+  }
+  #menuPentadbir button:nth-child(1)::before{content:"＋";}
+  #menuPentadbir button:nth-child(2)::before{content:"⇧";}
+  #menuPentadbir button:nth-child(3)::before{content:"⇄";}
+  #menuPentadbir button:nth-child(4)::before{content:"⌘";}
+  #menuPentadbir button:nth-child(5)::before{content:"▥";}
+  #menuPentadbir button:nth-child(6)::before{content:"▤";}
+  #menuPentadbir button:nth-child(7)::before{content:"▧";}
+  #menuPentadbir button:nth-child(8)::before{content:"◆";}
+  #menuPentadbir button:nth-child(9)::before{content:"◉";}
+  #menuPentadbir button:nth-child(10)::before{content:"⚿";}
+  #menuPentadbir .nav-button::before{content:"TSM";font-size:13px;font-weight:900;letter-spacing:.08em;}
+
+  .topbar-actions>.logout{
+    grid-area:logout;
+    align-self:start;
+    min-width:124px;
+    min-height:44px;
+    margin:0;
+    border:1px solid rgba(255,112,112,.24);
+    border-radius:11px;
+    background:linear-gradient(135deg,#b3333d,#8c252d);
+    box-shadow:0 9px 24px rgba(150,38,47,.24);
+  }
+
+  .content{padding:22px 30px 46px;}
+  .content>section{scroll-margin-top:20px;}
+
+  /* Penapis seperti control panel. */
+  .filters{
+    gap:12px;
+    margin-bottom:12px;
+    padding:16px;
+    border:1px solid var(--dash-line);
+    border-radius:15px;
+    background:linear-gradient(145deg,rgba(14,29,48,.98),rgba(10,22,37,.98));
+    box-shadow:0 12px 28px rgba(0,0,0,.16);
+  }
+  .filters label{color:#91a9c3;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
+  .filters input,.filters select{
+    min-height:46px;
+    border:1px solid rgba(120,166,213,.19);
+    border-radius:10px;
+    background:#081522;
+    color:#f4f8ff;
+  }
+  .filters input:focus,.filters select:focus{border-color:var(--dash-cyan);box-shadow:0 0 0 3px rgba(53,199,255,.09);}
+
+  .actions{gap:10px;margin-bottom:16px;}
+  .actions button,.actions select{
+    min-height:46px;
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:10px;
+    box-shadow:0 7px 18px rgba(0,0,0,.17);
+  }
+
+  /* KPI — gaya mockup, nilai besar + accent berbeza. */
+  .stats{grid-template-columns:repeat(8,minmax(0,1fr));gap:11px;}
+  .stat{
+    position:relative;
+    min-height:108px;
+    padding:18px 15px 14px;
+    overflow:hidden;
+    border:1px solid var(--dash-line);
+    border-radius:14px;
+    background:linear-gradient(145deg,#102139,#0c192a);
+    box-shadow:0 11px 26px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.025);
+  }
+  .stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--dash-cyan);}
+  .stat:nth-child(2)::before,.stat:nth-child(6)::before{background:#39d98a;}
+  .stat:nth-child(3)::before{background:#f0c94a;}
+  .stat:nth-child(4)::before,.stat:nth-child(7)::before{background:#ff6673;}
+  .stat:nth-child(5)::before{background:#a779ff;}
+  .stat:nth-child(8)::before{background:#e7b83d;}
+  .stat::after{content:"";position:absolute;width:72px;height:72px;right:-28px;top:-30px;border-radius:50%;background:rgba(53,199,255,.045);}
+  .value{color:#fff;font-size:31px;font-weight:900;line-height:1;}
+  .label{margin-top:10px;color:#91a7c0;font-size:11px;font-weight:700;}
+
+  .progress-card{
+    margin-top:14px;
+    padding:18px 20px;
+    border:1px solid var(--dash-line);
+    border-radius:15px;
+    background:linear-gradient(145deg,#0f2035,#0b192a);
+    box-shadow:0 12px 28px rgba(0,0,0,.17);
+  }
+  .progress-title{font-size:14px;color:#f5f8fc;}
+  .progress-percent{color:var(--dash-cyan);font-size:24px;font-weight:900;}
+  .progress-track{height:12px;background:#172a40;box-shadow:inset 0 2px 5px rgba(0,0,0,.35);}
+  .progress-fill{background:linear-gradient(90deg,#2587e8,#35c7ff);box-shadow:0 0 15px rgba(53,199,255,.2);}
+  .progress-text{color:#8fa5bd;font-size:11px;}
+
+  /* Semua kandungan/carta asal kekal, hanya skin profesional. */
+  .card,.table-card,.admin-chart-card,.admin-chart-summary-card,.admin-operation-map-card{border-color:var(--dash-line);}
+  .card,.table-card{
+    background:linear-gradient(145deg,rgba(15,31,51,.98),rgba(10,22,37,.98));
+    box-shadow:0 14px 32px rgba(0,0,0,.19);
+  }
+  .section-heading h2,.admin-chart-card h3{color:#f0c94a;}
+  .admin-chart-module{padding:20px;border-radius:17px;}
+  .admin-chart-grid{gap:15px;}
+  .admin-chart-card{
+    padding:18px;
+    border-radius:14px;
+    background:linear-gradient(145deg,#0f2035,#0a1828);
+    box-shadow:0 12px 27px rgba(0,0,0,.18);
+  }
+  .admin-chart-summary-card{background:#091827;border-radius:11px;}
+  .admin-chart-canvas-wrap{height:350px;}
+  .admin-attendance-chart-card,.admin-incident-chart-card{grid-column:1/-1;}
+  .admin-attendance-list-panel,.admin-attendance-chart-panel,
+  .admin-incident-chart-panel,.admin-incident-detail-panel{background:#091725;border-color:var(--dash-line);}
+  .wrap,.admin-report-table-wrap{border-color:var(--dash-line);background:#081522;}
+  th{background:#0d1c2e;color:#e8c345;}
+  tbody tr:hover{background:#11253c;}
 }
 
-#loginPage #btnLogin.primary{
-  width:100%;
-  min-height:58px;
-  margin:4px 0 14px;
-  border:1px solid rgba(48,198,255,.82);
-  border-radius:12px;
-  background:linear-gradient(90deg,#20aff2 0%,#0b87e3 55%,#0873ce 100%);
-  color:#fff;
-  font-size:15px;
-  font-weight:900;
-  letter-spacing:.5px;
-  box-shadow:0 10px 26px rgba(0,116,204,.24);
+@media screen and (min-width:1500px){
+  .topbar{padding-left:40px;padding-right:40px;}
+  .content{padding-left:36px;padding-right:36px;}
+  #menuPentadbir.admin-menu-panel,#menuPentadbir.admin-menu-panel[hidden]{grid-template-columns:repeat(6,minmax(150px,1fr));}
+  .admin-chart-canvas-wrap{height:380px;}
 }
-#loginPage #btnLogin.primary:hover{filter:brightness(1.08);transform:translateY(-1px);}
-
-#loginPage #loginStatus{min-height:0;margin:0;}
-
-#loginPage a.link{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  width:100%;
-  min-height:54px;
-  margin-top:12px;
-  padding:12px 18px;
-  border:1px solid rgba(73,151,202,.46);
-  border-radius:12px;
-  background:linear-gradient(180deg,rgba(38,73,99,.95),rgba(27,56,78,.95));
-  color:#fff;
-  font-weight:800;
-  text-decoration:none;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
-}
-#loginPage a.link:hover{border-color:#24b5ff;background:linear-gradient(180deg,#315f7e,#244b67);}
-
-@media(max-width:600px){
-  #loginPage.login{padding:18px 12px;}
-  #loginPage > .card{padding:26px 20px 24px;border-radius:18px;}
-  #loginPage .logo{font-size:28px;}
-  #loginPage #tajukLogin{font-size:14px;margin-bottom:22px;}
-  #loginPage input,#loginPage #btnLogin.primary{height:54px;min-height:54px;}
-}
-/* FIX011: compact professional Pentadbir dropdown menu */
-.admin-menu-shell{position:relative!important;width:auto!important;display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:10px!important;flex-wrap:nowrap!important}
-.admin-menu-shell .admin-menu-toggle{width:auto!important;min-width:180px!important;background:linear-gradient(180deg,#124a70,#0b3655)!important;border:1px solid rgba(57,181,255,.34)!important;border-radius:10px!important}
-.admin-menu-shell .admin-menu-panel[hidden]{display:none!important}
-.admin-menu-shell .admin-menu-panel{position:absolute!important;top:calc(100% + 10px)!important;right:136px!important;z-index:1000!important;width:330px!important;max-width:calc(100vw - 32px)!important;margin:0!important;padding:10px!important;display:grid!important;grid-template-columns:1fr!important;gap:7px!important;border:1px solid rgba(52,174,240,.30)!important;border-radius:13px!important;background:rgba(3,25,42,.985)!important;box-shadow:0 22px 55px rgba(0,0,0,.50)!important;backdrop-filter:blur(14px)!important}
-.admin-menu-shell .admin-menu-panel .header-action-button,.admin-menu-shell .admin-menu-panel .admin-menu-link{width:100%!important;min-height:43px!important;margin:0!important;padding:10px 14px!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;text-align:left!important;border-radius:8px!important;box-shadow:none!important;font-size:12px!important}
-.admin-menu-shell .admin-menu-panel .header-action-button:hover,.admin-menu-shell .admin-menu-panel .admin-menu-link:hover{filter:brightness(1.16)!important;transform:translateX(2px)!important}
-.admin-menu-shell>.logout{width:auto!important;min-width:126px!important;min-height:46px!important;margin:0!important}
-.topbar{overflow:visible!important}
-@media(max-width:700px){.admin-menu-shell{width:100%!important;display:grid!important;grid-template-columns:1fr 1fr!important}.admin-menu-shell .admin-menu-toggle,.admin-menu-shell>.logout{width:100%!important;min-width:0!important}.admin-menu-shell .admin-menu-panel{top:calc(100% + 8px)!important;right:0!important;width:100%!important;max-width:none!important}}
-@media(max-width:460px){.admin-menu-shell{grid-template-columns:1fr!important}}
