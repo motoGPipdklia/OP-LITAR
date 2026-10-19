@@ -14244,27 +14244,56 @@ function salinanStatikLaporanHarianUntukEksport() {
   return clone;
 }
 
-async function cetakLaporanKeseluruhanHarian() {
+function cetakLaporanKeseluruhanHarian() {
   const asal = el("kandunganLaporanKeseluruhanHarian");
-  if (!asal || !laporanHarianSudahDijana) return alert("Sila jana laporan terlebih dahulu.");
-  if (!window.html2canvas) return alert("Modul cetakan belum dimuatkan. Pastikan internet tersedia dan muat semula halaman.");
+  const clone = salinanStatikLaporanHarianUntukEksport();
+  if (!clone || !asal) return alert("Sila jana laporan terlebih dahulu.");
+
   const tarikh = el("tarikhLaporanKeseluruhanHarian")?.value || hariIniMalaysia();
-  const btn = el("btnCetakLaporanKeseluruhanHarian"); const statusId="statusLaporanKeseluruhanHarian";
-  try {
-    if(btn){btn.disabled=true;btn.dataset.teksAsal=btn.textContent||"CETAK";btn.textContent="SEDANG MENYEDIAKAN...";}
-    paparMesej(statusId,"Sedang menyediakan cetakan sama seperti paparan komputer...","warning");
-    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-    const rect=asal.getBoundingClientRect(); const lebar=Math.max(1,Math.round(rect.width)); const tinggi=Math.max(1,Math.round(asal.scrollHeight));
-    const bg=getComputedStyle(document.body).backgroundColor||"#0f0f0f";
-    const canvas=await window.html2canvas(asal,{scale:1.5,useCORS:true,allowTaint:false,backgroundColor:bg,logging:false,width:lebar,height:tinggi,windowWidth:Math.max(window.innerWidth,lebar),windowHeight:Math.max(window.innerHeight,tinggi),scrollX:0,scrollY:-window.scrollY});
-    const PW=287,PH=200,pxPerMm=canvas.width/PW,pagePx=Math.max(1,Math.floor(PH*pxPerMm)),pages=[];
-    for(let y=0;y<canvas.height;y+=pagePx){const h=Math.min(pagePx,canvas.height-y),c=document.createElement("canvas");c.width=canvas.width;c.height=h;c.getContext("2d").drawImage(canvas,0,y,canvas.width,h,0,0,canvas.width,h);pages.push({src:c.toDataURL("image/png",1),h:h/pxPerMm});}
-    const w=window.open("","_blank","width=1500,height=950"); if(!w) throw new Error("Pelayar menghalang tetingkap cetak. Benarkan pop-up dan cuba semula.");
-    const content=pages.map((p,i)=>`<section class="print-page${i===pages.length-1?' last':''}"><img src="${p.src}" style="width:${PW}mm;height:${p.h}mm"></section>`).join("");
-    w.document.open(); w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Laporan Keseluruhan Harian ${escapeHtml(formatTarikhMalaysia(tarikh))}</title><style>@page{size:A4 landscape;margin:5mm}html,body{margin:0;padding:0;background:#fff}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.print-page{width:287mm;height:200mm;margin:0 auto;overflow:hidden;break-after:page;page-break-after:always;display:flex;align-items:flex-start;background:#fff}.print-page.last{break-after:auto;page-break-after:auto}.print-page img{display:block;max-width:none;object-fit:contain;object-position:top left}@media screen{body{background:#333;padding:12px}.print-page{margin:0 auto 12px;box-shadow:0 0 0 1px #aaa}}@media print{.print-page{margin:0}}</style></head><body>${content}<script>window.addEventListener("load",function(){Promise.all(Array.from(document.images).map(img=>img.complete?Promise.resolve():new Promise(r=>{img.onload=r;img.onerror=r}))).then(()=>setTimeout(()=>{window.focus();window.print()},300))});<\/script></body></html>`); w.document.close();
-    paparMesej(statusId,"Cetakan disediakan sama seperti paparan komputer.","success");
-  } catch(error){console.error("Cetak laporan keseluruhan gagal:",error);paparMesej(statusId,`Cetakan gagal: ${escapeHtml(error?.message||"Ralat tidak diketahui.")}`,"error");alert(error?.message||"Cetakan gagal.");}
-  finally{if(btn){btn.disabled=false;btn.textContent=btn.dataset.teksAsal||"CETAK";delete btn.dataset.teksAsal;}}
+  const cssLinks = [...document.querySelectorAll('link[rel="stylesheet"]')]
+    .map(link => `<link rel="stylesheet" href="${escapeHtml(new URL(link.getAttribute("href"), document.baseURI).href)}">`)
+    .join("\n");
+
+  const lebarAsal = Math.max(900, Math.round(asal.getBoundingClientRect().width));
+  const bgBody = getComputedStyle(document.body).backgroundColor || "#111";
+  const w = window.open("", "_blank", "width=1500,height=950");
+  if (!w) return alert("Pelayar menghalang tetingkap cetak. Benarkan pop-up dan cuba semula.");
+
+  w.document.open();
+  w.document.write(`<!DOCTYPE html><html lang="ms"><head><meta charset="UTF-8"><title>Laporan Keseluruhan Harian ${escapeHtml(formatTarikhMalaysia(tarikh))}</title>${cssLinks}<style>
+    @page{size:A4 landscape;margin:8mm}
+    html,body{margin:0!important;padding:0!important;background:${escapeHtml(bgBody)}!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    body{padding:12px!important}
+    #kandunganCetak{box-sizing:border-box!important;width:${lebarAsal}px!important;max-width:none!important;margin:0 auto!important}
+    #kandunganCetak *{box-sizing:border-box!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    #kandunganCetak img{max-width:100%!important;height:auto!important;object-fit:contain!important}
+    #kandunganCetak .admin-visitor-detail-panel,
+    #kandunganCetak .admin-vehicle-detail-panel,
+    #kandunganCetak .admin-attendance-list-panel,
+    #kandunganCetak .admin-map-location-panel,
+    #kandunganCetak .admin-vvip-detail-panel,
+    #kandunganCetak .admin-incident-detail-panel{display:none!important}
+    #kandunganCetak .admin-visitor-layout,
+    #kandunganCetak .admin-vehicle-layout,
+    #kandunganCetak .admin-attendance-layout,
+    #kandunganCetak .admin-operation-map-layout,
+    #kandunganCetak .admin-vvip-layout,
+    #kandunganCetak .admin-incident-layout{display:block!important}
+    #kandunganCetak .admin-visitor-chart-panel,
+    #kandunganCetak .admin-vehicle-chart-panel,
+    #kandunganCetak .admin-attendance-chart-panel,
+    #kandunganCetak .admin-operation-map-stage,
+    #kandunganCetak .admin-vvip-list-panel,
+    #kandunganCetak .admin-incident-chart-panel{width:100%!important;max-width:none!important}
+    @media print{
+      body{padding:0!important}
+      #kandunganCetak{margin:0!important}
+      .admin-chart-card,.admin-visitor-chart-block,.admin-vehicle-chart-block{break-inside:avoid-page;page-break-inside:avoid}
+    }
+  </style></head><body><main id="kandunganCetak">${clone.innerHTML}</main><script>
+    window.addEventListener("load",function(){setTimeout(function(){window.focus();window.print();},900)});
+  <\/script></body></html>`);
+  w.document.close();
 }
 
 async function muatTurunPdfLaporanKeseluruhanHarian() {
@@ -15549,4 +15578,4 @@ function toggleMenuPentadbir(paksaBuka = null) {
 
 document.addEventListener("keydown", function (event) {
   if (event.key === "Escape") toggleMenuPentadbir(false);
-});
+});\n\n/* ================================================================\n   FIX 004 — PDF VIEW + PRINT 1 CARTA / HALAMAN\n================================================================ */\nasync function fix004MuatTurunPdfView(){\n  const asal=document.getElementById('kandunganLaporanKeseluruhanHarian');\n  if(!asal) return alert('Sila jana laporan terlebih dahulu.');\n  if(!window.html2canvas || !window.jspdf?.jsPDF) return alert('Modul PDF belum dimuatkan. Muat semula halaman.');\n  const tarikh=document.getElementById('tarikhLaporanKeseluruhanHarian')?.value || new Date().toISOString().slice(0,10);\n  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));\n  const rect=asal.getBoundingClientRect();\n  const canvas=await html2canvas(asal,{scale:1.35,useCORS:true,allowTaint:false,backgroundColor:getComputedStyle(document.body).backgroundColor||'#111',logging:false,width:Math.round(rect.width),height:asal.scrollHeight,windowWidth:Math.max(innerWidth,Math.round(rect.width)),windowHeight:Math.max(innerHeight,asal.scrollHeight),scrollX:0,scrollY:-scrollY});\n  const W=297, H=W*(canvas.height/canvas.width);\n  const pdf=new jspdf.jsPDF({orientation:H>=W?'portrait':'landscape',unit:'mm',format:[W,H],compress:true});\n  pdf.addImage(canvas.toDataURL('image/jpeg',.96),'JPEG',0,0,W,H,undefined,'FAST');\n  pdf.save(`OP_LITAR_LAPORAN_KESELURUHAN_VIEW_${tarikh}.pdf`);\n}\n\nfunction fix004CetakSatuCartaSatuHalaman(){\n  const asal=document.getElementById('kandunganLaporanKeseluruhanHarian');\n  if(!asal) return alert('Sila jana laporan terlebih dahulu.');\n  const clone=asal.cloneNode(true);\n  clone.querySelectorAll('.admin-visitor-detail-panel,.admin-vehicle-detail-panel,.admin-attendance-list-panel,.admin-map-location-panel,.admin-vvip-detail-panel,.admin-incident-detail-panel').forEach(x=>x.remove());\n  clone.querySelectorAll('.admin-chart-card').forEach(x=>x.classList.add('fix004-page'));\n  const styles=[...document.querySelectorAll('link[rel="stylesheet"]')].map(x=>`<link rel="stylesheet" href="${new URL(x.getAttribute('href'),document.baseURI).href}">`).join('');\n  const w=open('','_blank','width=1500,height=950'); if(!w) return alert('Benarkan pop-up untuk cetakan.');\n  w.document.write(`<!doctype html><html><head><meta charset="utf-8">${styles}<style>@page{size:A4 landscape;margin:7mm}html,body{margin:0;background:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}.fix004-page{break-before:page;page-break-before:always;break-inside:avoid;page-break-inside:avoid;width:100%!important;max-height:190mm!important;overflow:hidden!important}.fix004-page:first-child{break-before:auto;page-break-before:auto}.admin-visitor-layout,.admin-vehicle-layout,.admin-attendance-layout,.admin-operation-map-layout,.admin-vvip-layout,.admin-incident-layout{display:block!important}.admin-visitor-chart-panel,.admin-vehicle-chart-panel,.admin-attendance-chart-panel,.admin-operation-map-stage,.admin-vvip-list-panel,.admin-incident-chart-panel{width:100%!important;max-width:none!important}</style></head><body>${clone.outerHTML}<script>addEventListener('load',()=>setTimeout(()=>print(),800))<\\/script></body></html>`);\n  w.document.close();\n}\n\naddEventListener('DOMContentLoaded',()=>{\n  const pdf=document.getElementById('btnPdfLaporanKeseluruhanHarian');\n  const cetak=document.getElementById('btnCetakLaporanKeseluruhanHarian');\n  if(pdf){const n=pdf.cloneNode(true);pdf.replaceWith(n);n.addEventListener('click',fix004MuatTurunPdfView);}\n  if(cetak){const n=cetak.cloneNode(true);cetak.replaceWith(n);n.addEventListener('click',fix004CetakSatuCartaSatuHalaman);}\n});\n
