@@ -1196,3 +1196,21 @@ body:has(#loginBox:not(.hidden))::after{
   content:none !important;
   display:none !important;
 }
+
+
+/* =========================================================
+   OP LITAR INDEX FIX 005 - LABEL PORTAL DI TENGAH
+========================================================= */
+body:has(#loginBox:not(.hidden)) #loginBox .supervisor-link{
+  position:relative !important;
+  justify-content:center !important;
+  text-align:center !important;
+  padding-left:48px !important;
+  padding-right:48px !important;
+}
+body:has(#loginBox:not(.hidden)) #loginBox .supervisor-link::after{
+  position:absolute !important;
+  right:18px !important;
+  top:50% !important;
+  transform:translateY(-50%) !important;
+}
