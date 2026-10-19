@@ -1989,3 +1989,5 @@ document.addEventListener("DOMContentLoaded", () => {
 document.addEventListener("keydown", event => {
   if (event.key === "Escape" && !el("modalPeta")?.hidden) tutupPeta();
 });
+/* FIX007 UI CLOCK */
+(function(){function u(){const d=new Date(),a=document.getElementById('petugasTarikh'),b=document.getElementById('petugasMasa');if(a)a.textContent=d.toLocaleDateString('ms-MY',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});if(b)b.textContent=d.toLocaleTimeString('ms-MY',{hour12:false});}document.addEventListener('DOMContentLoaded',()=>{u();setInterval(u,1000)});})();
