@@ -14244,56 +14244,27 @@ function salinanStatikLaporanHarianUntukEksport() {
   return clone;
 }
 
-function cetakLaporanKeseluruhanHarian() {
+async function cetakLaporanKeseluruhanHarian() {
   const asal = el("kandunganLaporanKeseluruhanHarian");
-  const clone = salinanStatikLaporanHarianUntukEksport();
-  if (!clone || !asal) return alert("Sila jana laporan terlebih dahulu.");
-
+  if (!asal || !laporanHarianSudahDijana) return alert("Sila jana laporan terlebih dahulu.");
+  if (!window.html2canvas) return alert("Modul cetakan belum dimuatkan. Pastikan internet tersedia dan muat semula halaman.");
   const tarikh = el("tarikhLaporanKeseluruhanHarian")?.value || hariIniMalaysia();
-  const cssLinks = [...document.querySelectorAll('link[rel="stylesheet"]')]
-    .map(link => `<link rel="stylesheet" href="${escapeHtml(new URL(link.getAttribute("href"), document.baseURI).href)}">`)
-    .join("\n");
-
-  const lebarAsal = Math.max(900, Math.round(asal.getBoundingClientRect().width));
-  const bgBody = getComputedStyle(document.body).backgroundColor || "#111";
-  const w = window.open("", "_blank", "width=1500,height=950");
-  if (!w) return alert("Pelayar menghalang tetingkap cetak. Benarkan pop-up dan cuba semula.");
-
-  w.document.open();
-  w.document.write(`<!DOCTYPE html><html lang="ms"><head><meta charset="UTF-8"><title>Laporan Keseluruhan Harian ${escapeHtml(formatTarikhMalaysia(tarikh))}</title>${cssLinks}<style>
-    @page{size:A4 landscape;margin:8mm}
-    html,body{margin:0!important;padding:0!important;background:${escapeHtml(bgBody)}!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-    body{padding:12px!important}
-    #kandunganCetak{box-sizing:border-box!important;width:${lebarAsal}px!important;max-width:none!important;margin:0 auto!important}
-    #kandunganCetak *{box-sizing:border-box!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-    #kandunganCetak img{max-width:100%!important;height:auto!important;object-fit:contain!important}
-    #kandunganCetak .admin-visitor-detail-panel,
-    #kandunganCetak .admin-vehicle-detail-panel,
-    #kandunganCetak .admin-attendance-list-panel,
-    #kandunganCetak .admin-map-location-panel,
-    #kandunganCetak .admin-vvip-detail-panel,
-    #kandunganCetak .admin-incident-detail-panel{display:none!important}
-    #kandunganCetak .admin-visitor-layout,
-    #kandunganCetak .admin-vehicle-layout,
-    #kandunganCetak .admin-attendance-layout,
-    #kandunganCetak .admin-operation-map-layout,
-    #kandunganCetak .admin-vvip-layout,
-    #kandunganCetak .admin-incident-layout{display:block!important}
-    #kandunganCetak .admin-visitor-chart-panel,
-    #kandunganCetak .admin-vehicle-chart-panel,
-    #kandunganCetak .admin-attendance-chart-panel,
-    #kandunganCetak .admin-operation-map-stage,
-    #kandunganCetak .admin-vvip-list-panel,
-    #kandunganCetak .admin-incident-chart-panel{width:100%!important;max-width:none!important}
-    @media print{
-      body{padding:0!important}
-      #kandunganCetak{margin:0!important}
-      .admin-chart-card,.admin-visitor-chart-block,.admin-vehicle-chart-block{break-inside:avoid-page;page-break-inside:avoid}
-    }
-  </style></head><body><main id="kandunganCetak">${clone.innerHTML}</main><script>
-    window.addEventListener("load",function(){setTimeout(function(){window.focus();window.print();},900)});
-  <\/script></body></html>`);
-  w.document.close();
+  const btn = el("btnCetakLaporanKeseluruhanHarian"); const statusId="statusLaporanKeseluruhanHarian";
+  try {
+    if(btn){btn.disabled=true;btn.dataset.teksAsal=btn.textContent||"CETAK";btn.textContent="SEDANG MENYEDIAKAN...";}
+    paparMesej(statusId,"Sedang menyediakan cetakan sama seperti paparan komputer...","warning");
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    const rect=asal.getBoundingClientRect(); const lebar=Math.max(1,Math.round(rect.width)); const tinggi=Math.max(1,Math.round(asal.scrollHeight));
+    const bg=getComputedStyle(document.body).backgroundColor||"#0f0f0f";
+    const canvas=await window.html2canvas(asal,{scale:1.5,useCORS:true,allowTaint:false,backgroundColor:bg,logging:false,width:lebar,height:tinggi,windowWidth:Math.max(window.innerWidth,lebar),windowHeight:Math.max(window.innerHeight,tinggi),scrollX:0,scrollY:-window.scrollY});
+    const PW=287,PH=200,pxPerMm=canvas.width/PW,pagePx=Math.max(1,Math.floor(PH*pxPerMm)),pages=[];
+    for(let y=0;y<canvas.height;y+=pagePx){const h=Math.min(pagePx,canvas.height-y),c=document.createElement("canvas");c.width=canvas.width;c.height=h;c.getContext("2d").drawImage(canvas,0,y,canvas.width,h,0,0,canvas.width,h);pages.push({src:c.toDataURL("image/png",1),h:h/pxPerMm});}
+    const w=window.open("","_blank","width=1500,height=950"); if(!w) throw new Error("Pelayar menghalang tetingkap cetak. Benarkan pop-up dan cuba semula.");
+    const content=pages.map((p,i)=>`<section class="print-page${i===pages.length-1?' last':''}"><img src="${p.src}" style="width:${PW}mm;height:${p.h}mm"></section>`).join("");
+    w.document.open(); w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Laporan Keseluruhan Harian ${escapeHtml(formatTarikhMalaysia(tarikh))}</title><style>@page{size:A4 landscape;margin:5mm}html,body{margin:0;padding:0;background:#fff}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.print-page{width:287mm;height:200mm;margin:0 auto;overflow:hidden;break-after:page;page-break-after:always;display:flex;align-items:flex-start;background:#fff}.print-page.last{break-after:auto;page-break-after:auto}.print-page img{display:block;max-width:none;object-fit:contain;object-position:top left}@media screen{body{background:#333;padding:12px}.print-page{margin:0 auto 12px;box-shadow:0 0 0 1px #aaa}}@media print{.print-page{margin:0}}</style></head><body>${content}<script>window.addEventListener("load",function(){Promise.all(Array.from(document.images).map(img=>img.complete?Promise.resolve():new Promise(r=>{img.onload=r;img.onerror=r}))).then(()=>setTimeout(()=>{window.focus();window.print()},300))});<\/script></body></html>`); w.document.close();
+    paparMesej(statusId,"Cetakan disediakan sama seperti paparan komputer.","success");
+  } catch(error){console.error("Cetak laporan keseluruhan gagal:",error);paparMesej(statusId,`Cetakan gagal: ${escapeHtml(error?.message||"Ralat tidak diketahui.")}`,"error");alert(error?.message||"Cetakan gagal.");}
+  finally{if(btn){btn.disabled=false;btn.textContent=btn.dataset.teksAsal||"CETAK";delete btn.dataset.teksAsal;}}
 }
 
 async function muatTurunPdfLaporanKeseluruhanHarian() {
@@ -15578,23 +15549,4 @@ function toggleMenuPentadbir(paksaBuka = null) {
 
 document.addEventListener("keydown", function (event) {
   if (event.key === "Escape") toggleMenuPentadbir(false);
-});
-/* FIX 20261019-002 — paksa Chart.js kira lebar selepas modul CARTA sudah visible. */
-function paksaResizeCartaKenderaanPentadbir() {
-  const buatResize = () => {
-    try { if (cartaKenderaanPentadbir) cartaKenderaanPentadbir.resize(); } catch (_) {}
-    try { if (cartaKenderaanLokasiPentadbir) cartaKenderaanLokasiPentadbir.resize(); } catch (_) {}
-  };
-  requestAnimationFrame(() => requestAnimationFrame(buatResize));
-  setTimeout(buatResize, 80);
-  setTimeout(buatResize, 220);
-  setTimeout(buatResize, 500);
-}
-
-window.addEventListener("resize", paksaResizeCartaKenderaanPentadbir);
-window.addEventListener("load", paksaResizeCartaKenderaanPentadbir);
-
-document.addEventListener("click", (event) => {
-  const btn = event.target.closest("#btnBukaCartaPentadbir, [onclick*='bukaModulCartaPentadbir']");
-  if (btn) paksaResizeCartaKenderaanPentadbir();
 });
