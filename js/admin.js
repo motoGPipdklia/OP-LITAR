@@ -826,34 +826,21 @@ async function panggilEdgeFunction(namaFungsi, body, masaTamat = 25000) {
 }
 
 async function dapatkanProfil(userId, noBadan = "") {
-  // Cuba struktur profiles.id = UUID Auth.
-  let hasil = await denganHadMasa(
-    db.from("profiles").select("*").eq("id", userId).maybeSingle()
-  );
+  let hasil = await denganHadMasa(db.from("profiles").select("*").eq("id", userId).maybeSingle());
   if (!hasil.error && hasil.data) return hasil.data;
 
-  // Cuba struktur profiles.auth_user_id = UUID Auth.
-  const hasilAuth = await denganHadMasa(
-    db.from("profiles").select("*").eq("auth_user_id", userId).maybeSingle()
-  );
+  const hasilAuth = await denganHadMasa(db.from("profiles").select("*").eq("auth_user_id", userId).maybeSingle());
   if (!hasilAuth.error && hasilAuth.data) return hasilAuth.data;
 
-  // Fallback akaun lama: padankan No Badan.
-  const nb = atas(noBadan);
-  if (nb) {
-    const hasilNoBadan = await denganHadMasa(
-      db.from("profiles").select("*").ilike("no_badan", nb).maybeSingle()
-    );
+  const noBadanBersih = atas(noBadan);
+  if (noBadanBersih) {
+    const hasilNoBadan = await denganHadMasa(db.from("profiles").select("*").ilike("no_badan", noBadanBersih).maybeSingle());
     if (!hasilNoBadan.error && hasilNoBadan.data) return hasilNoBadan.data;
     if (hasilNoBadan.error) throw hasilNoBadan.error;
   }
 
-  if (hasilAuth.error && !/column.*auth_user_id.*does not exist/i.test(hasilAuth.error.message || "")) {
-    throw hasilAuth.error;
-  }
-  if (hasil.error && !/column.*id.*does not exist/i.test(hasil.error.message || "")) {
-    throw hasil.error;
-  }
+  if (hasilAuth.error) throw hasilAuth.error;
+  if (hasil.error) throw hasil.error;
   return null;
 }
 
@@ -1364,7 +1351,7 @@ if (!semakPerananPentadbir(profil)) {
     localStorage.setItem(KUNCI_ADMIN_F1, JSON.stringify(adminLogin));
 
     el("loginPage").classList.add("hidden");
-    el("loginPage").style.setProperty("display", "none", "important");
+    el("loginPage").style.display = "none";
     el("dashboard").classList.remove("hidden");
     el("dashboard").style.display = "block";
     el("adminName").textContent = [
@@ -1433,7 +1420,7 @@ if (!semakPerananPentadbir(profil)) {
     };
 
     el("loginPage").classList.add("hidden");
-    el("loginPage").style.setProperty("display", "none", "important");
+    el("loginPage").style.display = "none";
     el("dashboard").classList.remove("hidden");
     el("dashboard").style.display = "block";
     el("adminName").textContent = [
@@ -1457,10 +1444,8 @@ async function logout() {
   dataDashboard = [];
   dataPaparan = [];
 
-  el("dashboard").classList.add("hidden");
   el("dashboard").style.display = "none";
-  el("loginPage").classList.remove("hidden");
-  el("loginPage").style.setProperty("display", "flex", "important");
+  el("loginPage").style.display = "flex";
   el("noBadan").value = "";
   el("password").value = "";
   el("loginStatus").innerHTML = "";
