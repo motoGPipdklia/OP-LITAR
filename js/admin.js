@@ -1350,10 +1350,11 @@ if (!semakPerananPentadbir(profil)) {
 
     localStorage.setItem(KUNCI_ADMIN_F1, JSON.stringify(adminLogin));
 
-    el("loginPage").classList.add("hidden");
-    el("loginPage").style.display = "none";
-    el("dashboard").classList.remove("hidden");
-    el("dashboard").style.display = "block";
+    el("loginPage")?.classList.add("hidden");
+    if(el("loginPage")) el("loginPage").style.display="none";
+    el("dashboard")?.classList.remove("hidden");
+    el("dashboard")?.classList.add("admin-authenticated");
+    if(el("dashboard")) el("dashboard").style.display="block";
     el("adminName").textContent = [
       adminLogin.pangkat,
       adminLogin.nama,
@@ -1419,10 +1420,11 @@ if (!semakPerananPentadbir(profil)) {
       peranan: atas(profil.peranan)
     };
 
-    el("loginPage").classList.add("hidden");
-    el("loginPage").style.display = "none";
-    el("dashboard").classList.remove("hidden");
-    el("dashboard").style.display = "block";
+    el("loginPage")?.classList.add("hidden");
+    if(el("loginPage")) el("loginPage").style.display="none";
+    el("dashboard")?.classList.remove("hidden");
+    el("dashboard")?.classList.add("admin-authenticated");
+    if(el("dashboard")) el("dashboard").style.display="block";
     el("adminName").textContent = [
       adminLogin.pangkat,
       adminLogin.nama,
