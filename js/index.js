@@ -6,6 +6,8 @@ const db = window.supabaseClient;
 const ZON_MASA = "Asia/Kuala_Lumpur";
 const SELANG_SEMAKAN_STATUS = 15000;
 const HAD_KETEPATAN_GPS = 100;
+const TEMPOH_CARI_GPS_MS = 30000;
+const SASARAN_KETEPATAN_GPS = 30;
 
 /* Kunci tempatan khusus Formula 1 supaya tidak bercampur dengan MotoGP. */
 const KUNCI_USER_F1 = "skpoF1User";
@@ -59,15 +61,40 @@ function emailDalaman(noBadan) {
   return `${n}@skpo.local`;
 }
 function dapatkanDeviceId() {
-  const kunci = KUNCI_DEVICE_F1;
-  let id = localStorage.getItem(kunci);
+  /*
+    FIX 2026-10-20:
+    ID penggunaan peranti kini mempunyai skop HARI OPERASI.
+    Ini mengelakkan browser yang sama kekal dianggap "telah digunakan"
+    pada hari berikutnya. ID kekal sama sepanjang hari supaya refresh/login
+    semula pada browser yang sama tidak menghasilkan ID baharu.
+
+    Nota: Safari, Chrome dan browser dalam aplikasi mempunyai storan berasingan.
+    Web biasa tidak boleh mendapatkan satu hardware-ID yang sama merentas browser.
+  */
+  const tarikh = hariIniMalaysia();
+  const kunciHarian = `${KUNCI_DEVICE_F1}:${tarikh}`;
+  let id = localStorage.getItem(kunciHarian);
+
   if (!id) {
     const rawak = window.crypto?.randomUUID?.() ||
       "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
-        const r = Math.random() * 16 | 0; return (c === "x" ? r : (r & 3 | 8)).toString(16);
+        const r = Math.random() * 16 | 0;
+        return (c === "x" ? r : (r & 3 | 8)).toString(16);
       });
-    id = `F1-DEV-${rawak.toUpperCase()}`; localStorage.setItem(kunci, id);
+    id = `F1-${tarikh}-DEV-${rawak.toUpperCase()}`;
+    localStorage.setItem(kunciHarian, id);
   }
+
+  /* Kekalkan kunci lama untuk keserasian modul lain yang mungkin membacanya. */
+  localStorage.setItem(KUNCI_DEVICE_F1, id);
+
+  /* Bersihkan ID harian lama supaya localStorage tidak bertambah tanpa had. */
+  try {
+    Object.keys(localStorage)
+      .filter(k => k.startsWith(`${KUNCI_DEVICE_F1}:`) && k !== kunciHarian)
+      .forEach(k => localStorage.removeItem(k));
+  } catch (_) {}
+
   return id;
 }
 
@@ -390,23 +417,92 @@ function bukaSkrinGps(mod) {
 function dapatkanGPS() { dapatkanGpsUntuk(false); }
 function dapatkanGPSCheckout() { dapatkanGpsUntuk(true); }
 function dapatkanGpsUntuk(keluar) {
-  const ids = keluar ? ["gpsStatusCheckout", "koordinatCheckout", "jarakStatusCheckout", "btnDapatGPSCheckout", "btnHantarCheckout"]
+  const ids = keluar
+    ? ["gpsStatusCheckout", "koordinatCheckout", "jarakStatusCheckout", "btnDapatGPSCheckout", "btnHantarCheckout"]
     : ["gpsStatus", "koordinat", "jarakStatus", "btnDapatGPS", "btnHantar"];
   const [s, k, , g, h] = ids.map(el);
-  if (!navigator.geolocation) { s.innerHTML = '<span class="status-error">Peranti ini tidak menyokong GPS.</span>'; return; }
-  s.innerHTML = '<span class="status-warning">Mendapatkan lokasi GPS...</span>'; k.innerHTML = ""; g.disabled = true; h.disabled = true;
-  navigator.geolocation.getCurrentPosition(pos => {
+
+  if (!navigator.geolocation) {
+    s.innerHTML = '<span class="status-error">Peranti / browser ini tidak menyokong lokasi GPS.</span>';
+    return;
+  }
+
+  s.innerHTML = '<span class="status-warning"><strong>Mencari GPS terbaik...</strong><br>Sila tunggu sehingga bacaan stabil. Untuk iPhone, pastikan Location Services dan Precise Location dibenarkan.</span>';
+  k.innerHTML = "";
+  g.disabled = true;
+  h.disabled = true;
+
+  let bacaanTerbaik = null;
+  let jumlahBacaan = 0;
+  let selesai = false;
+  let watchId = null;
+
+  const tamat = (mesejAkhir = "") => {
+    if (selesai) return;
+    selesai = true;
+    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
     g.disabled = false;
-    const gps = { lat: Number(pos.coords.latitude), lng: Number(pos.coords.longitude), accuracy: Number(pos.coords.accuracy) };
-    if (keluar) lokasiGPSCheckout = gps; else lokasiGPS = gps;
-    s.innerHTML = '<span class="status-success">GPS berjaya diperoleh.</span>';
-    k.innerHTML = `Latitude: ${gps.lat.toFixed(7)}<br>Longitude: ${gps.lng.toFixed(7)}<br>Ketepatan GPS: ${gps.accuracy.toFixed(1)} meter`;
-    semakRadius(keluar);
+
+    if (bacaanTerbaik) {
+      if (keluar) lokasiGPSCheckout = bacaanTerbaik;
+      else lokasiGPS = bacaanTerbaik;
+
+      s.innerHTML = `<span class="status-success"><strong>GPS terbaik diperoleh.</strong><br>${escapeHtml(mesejAkhir || "Lokasi telah diperiksa.")}</span>`;
+      k.innerHTML = `Latitude: ${bacaanTerbaik.lat.toFixed(7)}<br>Longitude: ${bacaanTerbaik.lng.toFixed(7)}<br>Ketepatan GPS: ±${bacaanTerbaik.accuracy.toFixed(1)} meter<br>Jumlah bacaan: ${jumlahBacaan}`;
+      semakRadius(keluar);
+    } else {
+      s.innerHTML = '<span class="status-error"><strong>GPS belum berjaya diperoleh.</strong><br>Sila hidupkan Location Services, benarkan lokasi untuk browser, aktifkan Precise Location pada iPhone dan cuba semula di kawasan lebih terbuka.</span>';
+    }
+  };
+
+  const timer = setTimeout(() => tamat("Bacaan terbaik dalam tempoh 30 saat digunakan."), TEMPOH_CARI_GPS_MS);
+
+  watchId = navigator.geolocation.watchPosition(pos => {
+    if (selesai) return;
+    jumlahBacaan += 1;
+
+    const gps = {
+      lat: Number(pos.coords.latitude),
+      lng: Number(pos.coords.longitude),
+      accuracy: Number(pos.coords.accuracy)
+    };
+
+    if (!Number.isFinite(gps.lat) || !Number.isFinite(gps.lng) || !Number.isFinite(gps.accuracy)) return;
+
+    if (!bacaanTerbaik || gps.accuracy < bacaanTerbaik.accuracy) {
+      bacaanTerbaik = gps;
+      if (keluar) lokasiGPSCheckout = gps;
+      else lokasiGPS = gps;
+
+      k.innerHTML = `Latitude: ${gps.lat.toFixed(7)}<br>Longitude: ${gps.lng.toFixed(7)}<br>Ketepatan semasa: ±${gps.accuracy.toFixed(1)} meter<br>Bacaan: ${jumlahBacaan}`;
+      s.innerHTML = `<span class="status-warning"><strong>GPS sedang diperhalusi...</strong><br>Bacaan terbaik sekarang ±${gps.accuracy.toFixed(1)} meter.</span>`;
+    }
+
+    /* Jika sudah cukup tepat, tidak perlu tunggu sehingga timeout. */
+    if (bacaanTerbaik.accuracy <= SASARAN_KETEPATAN_GPS) {
+      clearTimeout(timer);
+      tamat("Ketepatan GPS yang baik telah dicapai.");
+    }
   }, err => {
-    g.disabled = false;
-    const mesej = err.code === 1 ? "Kebenaran lokasi ditolak." : err.code === 2 ? "Lokasi tidak dapat dikesan." : "Masa mendapatkan GPS tamat.";
-    s.innerHTML = `<span class="status-error">${escapeHtml(mesej)}</span>`;
-  }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+    if (selesai) return;
+
+    if (err.code === 1) {
+      clearTimeout(timer);
+      selesai = true;
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      g.disabled = false;
+      s.innerHTML = '<span class="status-error"><strong>AKSES LOKASI TIDAK DIBENARKAN.</strong><br>iPhone: Settings → Privacy & Security → Location Services → Safari Websites → While Using, kemudian hidupkan Precise Location.<br><br>Selepas ubah tetapan, kembali ke sistem dan tekan DAPATKAN GPS semula.</span>';
+      return;
+    }
+
+    /* POSITION_UNAVAILABLE/TIMEOUT tidak terus menggagalkan proses jika ada bacaan. */
+    if (bacaanTerbaik) return;
+    s.innerHTML = `<span class="status-warning">${err.code === 2 ? "Lokasi belum dapat dikesan." : "GPS masih mengambil masa."} Sistem masih mencuba sehingga 30 saat...</span>`;
+  }, {
+    enableHighAccuracy: true,
+    timeout: 12000,
+    maximumAge: 0
+  });
 }
 function semakRadius(keluar) {
   const gps = keluar ? lokasiGPSCheckout : lokasiGPS;
@@ -418,11 +514,28 @@ function semakRadius(keluar) {
   }
   const jarak = kiraJarakMeter(gps.lat, gps.lng, tugas.lat, tugas.lng);
   if (keluar) jarakCheckout = jarak; else jarakSemasa = jarak;
-  const dibenar = gps.accuracy <= HAD_KETEPATAN_GPS && jarak <= radius;
+  /*
+    Ambil kira ketidakpastian GPS. Jika bulatan ketepatan GPS masih bertindih
+    dengan radius lokasi tugas, petugas tidak terus ditolak sebagai di luar kawasan.
+    Ketepatan melebihi HAD_KETEPATAN_GPS tetap tidak diterima.
+  */
+  const gpsCukupBaik = gps.accuracy <= HAD_KETEPATAN_GPS;
+  const jelasDalamRadius = jarak <= radius;
+  const masihBertindihRadius = (jarak - gps.accuracy) <= radius;
+  const dibenar = gpsCukupBaik && (jelasDalamRadius || masihBertindihRadius);
+
   if (keluar) lokasiCheckoutDibenarkan = dibenar; else lokasiDibenarkan = dibenar;
-  el(jarakId).innerHTML = dibenar
-    ? `<span class="status-success">Lokasi berjaya disahkan (jarak ${jarak.toFixed(1)} meter; ketepatan GPS ${gps.accuracy.toFixed(1)} meter).</span>`
-    : `<span class="status-error">Lokasi tidak dibenarkan. Jarak ${jarak.toFixed(1)} meter; radius ${radius} meter; ketepatan GPS ${gps.accuracy.toFixed(1)} meter (maksimum ${HAD_KETEPATAN_GPS} meter).</span>`;
+
+  if (dibenar && jelasDalamRadius) {
+    el(jarakId).innerHTML = `<span class="status-success"><strong>Lokasi berjaya disahkan.</strong><br>Jarak ${jarak.toFixed(1)} meter; radius ${radius} meter; ketepatan GPS ±${gps.accuracy.toFixed(1)} meter.</span>`;
+  } else if (dibenar) {
+    el(jarakId).innerHTML = `<span class="status-warning"><strong>Lokasi diterima dengan toleransi ketepatan GPS.</strong><br>Jarak ${jarak.toFixed(1)} meter; radius ${radius} meter; ketepatan GPS ±${gps.accuracy.toFixed(1)} meter.</span>`;
+  } else if (!gpsCukupBaik) {
+    el(jarakId).innerHTML = `<span class="status-error"><strong>GPS masih terlalu lemah.</strong><br>Ketepatan semasa ±${gps.accuracy.toFixed(1)} meter. Sistem memerlukan maksimum ±${HAD_KETEPATAN_GPS} meter. Sila cuba semula di kawasan lebih terbuka.</span>`;
+  } else {
+    el(jarakId).innerHTML = `<span class="status-error"><strong>Anda berada di luar kawasan penugasan.</strong><br>Jarak ${jarak.toFixed(1)} meter; radius ${radius} meter; ketepatan GPS ±${gps.accuracy.toFixed(1)} meter.</span>`;
+  }
+
   el(butangId).disabled = !dibenar;
 }
 
