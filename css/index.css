@@ -1336,3 +1336,32 @@ body:has(#loginBox:not(.hidden)) #loginBox .supervisor-link::after{
   #dashboard .walkie-title-wrap{flex-direction:column;align-items:center;text-align:center;}
   #dashboard .walkie-refresh-button{width:100%;justify-content:center;}
 }
+
+
+/* =========================================================
+   OP LITAR - FIX 010 PROFIL PETUGAS RINGKAS
+   Tajuk Title Case; hanya nilai Pangkat, No. Badan dan Nama.
+========================================================= */
+#dashboard .mock-profile-banner .mock-rank{
+  color:#ffd42d !important;
+  font-size:17px !important;
+  font-weight:900 !important;
+  text-transform:none !important;
+  letter-spacing:.2px !important;
+}
+#dashboard .mock-profile-banner .mock-profile-field span{display:none !important;}
+#dashboard .mock-profile-banner #pangkatPetugas,
+#dashboard .mock-profile-banner #noBadanPetugas,
+#dashboard .mock-profile-banner #namaPetugas{
+  color:#fff !important;
+  text-align:center !important;
+}
+#dashboard .mock-profile-banner #pangkatPetugas{font-size:17px !important;}
+#dashboard .mock-profile-banner #noBadanPetugas{font-size:16px !important;}
+#dashboard .mock-profile-banner #namaPetugas{font-size:18px !important;}
+@media(max-width:650px){
+  #dashboard .mock-profile-banner .mock-rank{font-size:16px !important;}
+  #dashboard .mock-profile-banner #pangkatPetugas{font-size:16px !important;}
+  #dashboard .mock-profile-banner #noBadanPetugas{font-size:15px !important;}
+  #dashboard .mock-profile-banner #namaPetugas{font-size:16px !important;}
+}
