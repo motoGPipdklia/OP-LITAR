@@ -1827,3 +1827,306 @@ body #loginSection .urusetia-login-logo{
     left:16px !important;
   }
 }
+/* ======================================================================
+   FIX 20261020 — DASHBOARD URUSETIA PROFESSIONAL
+   Tema diselaraskan dengan Dashboard Petugas. Fungsi/ID asal dikekalkan.
+   ====================================================================== */
+:root{
+  --ops-bg:#03101d;
+  --ops-panel:#071c2e;
+  --ops-panel-2:#0a2439;
+  --ops-panel-3:#0d2b43;
+  --ops-line:#164766;
+  --ops-line-soft:#12354e;
+  --ops-cyan:#2cc4ff;
+  --ops-blue:#1597e5;
+  --ops-blue-2:#0b70b7;
+  --ops-text:#f7fbff;
+  --ops-muted:#8faec4;
+  --ops-green:#27a568;
+  --ops-yellow:#d7a62c;
+  --ops-red:#dc5963;
+  --ops-orange:#e58a20;
+  --ops-shadow:0 18px 50px rgba(0,0,0,.34);
+}
+
+body{
+  background:
+    radial-gradient(circle at 50% 0%,rgba(16,91,139,.17),transparent 35%),
+    linear-gradient(180deg,#020b13 0%,#04111e 100%);
+  color:var(--ops-text);
+}
+
+.container{
+  width:min(100% - 36px,1500px);
+  margin:0 auto;
+  padding:26px 0 44px;
+}
+
+header{
+  margin:0 0 20px;
+  padding:22px 24px;
+  border:1px solid var(--ops-line-soft);
+  border-radius:18px;
+  background:linear-gradient(135deg,rgba(8,34,55,.96),rgba(4,20,34,.96));
+  box-shadow:var(--ops-shadow);
+  text-align:left;
+}
+.logo{
+  color:var(--ops-text);
+  font-size:clamp(25px,3vw,36px);
+  font-weight:900;
+  letter-spacing:.4px;
+  text-align:left;
+}
+.logo::before{
+  content:"OP LITAR / OPERATIONS CONTROL";
+  display:block;
+  margin-bottom:9px;
+  color:var(--ops-cyan);
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:2.2px;
+}
+.sub{
+  margin:7px 0 0;
+  color:var(--ops-muted);
+  text-align:left;
+}
+
+#dashboardSection > .card{
+  margin:0;
+  padding:20px;
+  border:1px solid var(--ops-line-soft);
+  border-radius:20px;
+  background:linear-gradient(180deg,rgba(5,25,42,.98),rgba(3,17,29,.98));
+  box-shadow:var(--ops-shadow);
+}
+
+.topbar{
+  align-items:stretch;
+  margin-bottom:16px;
+}
+.profile{
+  position:relative;
+  min-height:92px;
+  padding:18px 20px 18px 76px;
+  border:1px solid var(--ops-line);
+  border-radius:14px;
+  background:linear-gradient(135deg,#08243a,#061b2c);
+  color:var(--ops-muted);
+  line-height:1.65;
+}
+.profile::before{
+  content:"♙";
+  position:absolute;
+  left:18px;
+  top:19px;
+  display:grid;
+  place-items:center;
+  width:42px;
+  height:42px;
+  border-radius:11px;
+  background:#0b4268;
+  color:var(--ops-cyan);
+  font-size:22px;
+}
+.profile strong{color:#fff;font-size:17px;}
+.topbar > .btn-secondary{
+  min-width:150px;
+  border:1px solid rgba(220,89,99,.45);
+  background:linear-gradient(180deg,#bd3945,#962b35);
+  box-shadow:0 8px 24px rgba(189,57,69,.18);
+}
+
+.toolbar{
+  display:grid;
+  grid-template-columns:minmax(280px,1.6fr) minmax(190px,.8fr) minmax(210px,.85fr) minmax(150px,.55fr);
+  gap:10px;
+  margin:16px 0;
+  padding:14px;
+  border:1px solid var(--ops-line-soft);
+  border-radius:15px;
+  background:rgba(8,31,50,.72);
+}
+.toolbar input,.toolbar select,.toolbar button{width:100%;min-width:0;margin:0;}
+input,select,textarea{
+  border:1px solid var(--ops-line);
+  border-radius:10px;
+  background:#031522;
+  color:#fff;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--ops-cyan);
+  box-shadow:0 0 0 3px rgba(44,196,255,.13);
+}
+input::placeholder,textarea::placeholder{color:#6f91a8;}
+.btn-refresh{
+  background:linear-gradient(135deg,var(--ops-blue),var(--ops-blue-2));
+  color:#fff;
+}
+
+.ringkasan-grid{gap:10px;margin:16px 0 18px;}
+.ringkasan-card{
+  position:relative;
+  overflow:hidden;
+  min-height:112px;
+  padding:17px 18px 16px;
+  border:1px solid var(--ops-line-soft);
+  border-left:4px solid var(--ops-cyan);
+  border-radius:14px;
+  background:linear-gradient(145deg,#0a263d,#071b2d);
+  box-shadow:0 8px 24px rgba(0,0,0,.16);
+}
+.ringkasan-card::after{
+  content:"";
+  position:absolute;
+  right:-24px;top:-35px;
+  width:100px;height:100px;border-radius:50%;
+  background:rgba(44,196,255,.045);
+}
+.ringkasan-card:hover{border-color:#24719b;background:#0b2a43;transform:translateY(-1px);}
+.ringkasan-card span{color:#91aec2;font-size:11px;letter-spacing:.8px;}
+.ringkasan-card strong{color:#fff;font-size:34px;}
+.ringkasan-card.belum{border-left-color:var(--ops-red);}
+.ringkasan-card.belum strong{color:#ff7e87;}
+.ringkasan-card.menunggu{border-left-color:var(--ops-yellow);}
+.ringkasan-card.menunggu strong{color:#ffd15a;}
+.ringkasan-card.laporan{border-left-color:#5aa7ff;}
+.ringkasan-card.laporan strong{color:#6eb6ff;}
+
+.tabbar{
+  gap:6px;
+  margin:18px 0 14px;
+  padding:5px;
+  border:1px solid var(--ops-line-soft);
+  border-radius:12px;
+  background:#041725;
+}
+.tab-button{
+  flex:0 1 auto;
+  padding:12px 18px;
+  border:1px solid transparent;
+  border-radius:9px;
+  color:#8eacbf;
+}
+.tab-button:hover{background:#09263c;color:#fff;}
+.tab-button.active{
+  border-color:#17618c;
+  background:linear-gradient(135deg,#0d3b5b,#0a2d47);
+  color:var(--ops-cyan);
+  box-shadow:inset 0 -2px 0 var(--ops-cyan);
+}
+
+.status{border-radius:11px;}
+.status.success,.success{border-color:#176b4b;background:#073724;color:#9df1c5;}
+.status.warning,.warning{border-color:#725e21;background:#332a0c;color:#ffe18a;}
+.status.error,.error{border-color:#74343a;background:#361419;color:#ffb9bf;}
+
+.list{gap:12px;}
+.record{
+  padding:18px;
+  border:1px solid var(--ops-line-soft);
+  border-radius:15px;
+  background:linear-gradient(145deg,#081f33,#061725);
+  box-shadow:0 8px 24px rgba(0,0,0,.14);
+}
+.record:hover{border-color:#24688f;background:#09243a;transform:translateY(-1px);}
+.record h3{color:var(--ops-cyan);font-size:18px;}
+.record small{color:var(--ops-muted);}
+.grid{grid-template-columns:145px minmax(0,1fr);gap:9px 12px;}
+.label{color:#9cb8ca;}
+.actions{gap:10px;}
+.actions button{min-height:46px;border-radius:9px;}
+.btn-main,.btn-change{background:linear-gradient(135deg,#168fe0,#0a69b0);color:#fff;}
+.btn-ok{background:linear-gradient(135deg,#2ca96b,#218653);}
+.btn-no{background:linear-gradient(135deg,#d94e59,#ae313b);}
+.btn-secondary{background:#29475d;color:#fff;}
+
+/* Kekalkan warna tindakan Ganti/Cuti tetapi lebih profesional */
+.record .btn-change{box-shadow:0 5px 16px rgba(21,101,192,.14);}
+.record .btn-cuti,
+.record .btn-emergency,
+.record button[onclick*="Cuti"],
+.record button[onclick*="cuti"]{
+  background:linear-gradient(135deg,#e8901e,#c66e0b);
+  color:#fff;
+}
+
+.status-badge{padding:7px 12px;border-radius:999px;font-size:11px;letter-spacing:.2px;}
+.status-belum-hadir{border-color:#71333a;background:#3b171c;color:#ffb9bf;}
+.status-menunggu{border-color:#6d5921;background:#332a0c;color:#ffe18a;}
+.status-hadir,.status-selesai-tugas{border-color:#1e6b4e;background:#0b3928;color:#a8f2c9;}
+.status-diganti{border-color:#39566a;background:#132838;color:#bdd2df;}
+
+.sitrep-panel{
+  border-color:var(--ops-line-soft) !important;
+  background:linear-gradient(145deg,#081f33,#061725) !important;
+  box-shadow:0 8px 24px rgba(0,0,0,.14);
+}
+.sitrep-heading h2,.modal-header h2,.modal-box h2{color:var(--ops-cyan) !important;}
+.sitrep-field span{color:#b5cad8 !important;}
+
+.modal{background:rgba(0,7,13,.86);backdrop-filter:blur(5px);}
+.modal-panel,.modal-box{
+  border:1px solid var(--ops-line) !important;
+  background:linear-gradient(180deg,#09233a,#051725) !important;
+  box-shadow:0 24px 70px rgba(0,0,0,.58) !important;
+}
+.modal-header{border-bottom-color:var(--ops-line-soft);}
+.modal-close{background:#173b53;color:#fff;}
+.petugas-preview,.laporan-penuh{border-color:var(--ops-line-soft);background:#041522;}
+
+.empty{
+  border-color:#28516a;
+  background:rgba(5,26,42,.7);
+  color:#9db6c7;
+}
+
+/* TABLET */
+@media(max-width:1000px){
+  .container{width:min(100% - 24px,1500px);padding-top:16px;}
+  .toolbar{grid-template-columns:1fr 1fr;}
+  .ringkasan-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+
+/* TELEFON BIMBIT */
+@media(max-width:640px){
+  .container{width:100%;padding:0 10px 24px;}
+  header{margin:10px 0 12px;padding:16px;border-radius:14px;}
+  .logo{font-size:24px;}
+  .logo::before{font-size:9px;letter-spacing:1.5px;}
+  .sub{font-size:13px;line-height:1.45;}
+  #dashboardSection > .card{padding:11px;border-radius:15px;}
+  .topbar{display:grid;grid-template-columns:1fr;}
+  .profile{min-width:0;padding:15px 14px 15px 66px;font-size:13px;}
+  .profile::before{left:14px;top:16px;width:38px;height:38px;}
+  .topbar > .btn-secondary{width:100%;min-height:46px;}
+  .toolbar{grid-template-columns:1fr;padding:10px;gap:8px;}
+  .toolbar input,.toolbar select,.toolbar button{min-height:48px;font-size:15px;}
+  .ringkasan-grid{grid-template-columns:1fr 1fr;gap:8px;}
+  .ringkasan-card{min-height:96px;padding:13px;border-radius:12px;}
+  .ringkasan-card span{font-size:10px;line-height:1.35;}
+  .ringkasan-card strong{font-size:29px;}
+  .tabbar{overflow-x:auto;scrollbar-width:none;justify-content:flex-start;}
+  .tabbar::-webkit-scrollbar{display:none;}
+  .tab-button{flex:0 0 auto;min-height:44px;padding:10px 14px;font-size:12px;white-space:nowrap;}
+  .record{padding:14px;border-radius:13px;}
+  .record-heading{gap:8px;}
+  .record h3{font-size:16px;}
+  .grid{grid-template-columns:1fr;gap:3px;}
+  .grid .label{margin-top:8px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;}
+  .actions,.modal-actions{flex-direction:column;}
+  .actions button,.modal-actions button{width:100%;min-height:48px;}
+  .status-badge{white-space:normal;flex:0 0 auto;max-width:45%;}
+  .modal{padding:8px;align-items:flex-end;}
+  .modal-panel,.modal-box{width:100%;max-height:94vh;padding:16px;border-radius:16px 16px 10px 10px;}
+  .form-grid{grid-template-columns:1fr;}
+  .sitrep-heading{gap:10px;}
+  .sitrep-heading,.sitrep-filter-bar{display:grid !important;grid-template-columns:1fr !important;}
+  .sitrep-heading button{width:100%;}
+}
+
+@media(max-width:380px){
+  .ringkasan-grid{grid-template-columns:1fr;}
+}
