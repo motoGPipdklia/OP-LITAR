@@ -38,6 +38,18 @@ function hariIniMalaysia() {
     timeZone: ZON_MASA, year: "numeric", month: "2-digit", day: "2-digit"
   }).format(new Date());
 }
+function formatTarikhDMY(v) {
+  const nilai = teks(v);
+  if (!nilai) return "-";
+  const m = nilai.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return `${Number(m[3])}/${Number(m[2])}/${m[1]}`;
+  const d = new Date(nilai);
+  if (Number.isNaN(d.getTime())) return nilai;
+  return new Intl.DateTimeFormat("ms-MY", {
+    timeZone: ZON_MASA, day: "numeric", month: "numeric", year: "numeric"
+  }).format(d);
+}
+
 function formatTarikhMasa(v) {
   if (!v) return "-";
   const d = new Date(v);
@@ -1660,7 +1672,7 @@ function paparModulPassKenderaanPetugas(aktif) {
   if (!modul) return;
   modul.style.display = aktif ? "block" : "none";
   if (aktif) {
-    el("tarikhPassKenderaan").textContent = hariIniMalaysia();
+    el("tarikhPassKenderaan").textContent = formatTarikhDMY(hariIniMalaysia());
     el("noBadanPassKenderaan").textContent = userLogin?.noBadan || "-";
     el("pangkatPassKenderaan").textContent = userLogin?.pangkat || "-";
     el("namaPassKenderaan").textContent = userLogin?.nama || "-";
