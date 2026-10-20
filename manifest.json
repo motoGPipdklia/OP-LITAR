@@ -1,8 +1,8 @@
 {
   "id": "./index.html",
-  "name": "SKPO Formula 1 2026",
-  "short_name": "SKPO F1",
-  "description": "Sistem Kehadiran dan Penugasan Operasi Formula 1",
+  "name": "SKPO OP LITAR",
+  "short_name": "SKPO OP LITAR",
+  "description": "Sistem Kehadiran dan Penugasan Operasi OP LITAR",
   "start_url": "./index.html?source=pwa",
   "scope": "./",
   "display": "standalone",
