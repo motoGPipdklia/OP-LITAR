@@ -142,7 +142,7 @@ function paparDashboardProfil() {
   el("loginBox").style.display = "none"; el("dashboard").style.display = "block";
   el("pangkatPetugas").textContent = userLogin.pangkat || "PANGKAT TIDAK DINYATAKAN";
   el("namaPetugas").textContent = userLogin.nama || "-";
-  el("noBadanPetugas").textContent = `No Badan: ${userLogin.noBadan || "-"}`;
+  el("noBadanPetugas").textContent = userLogin.noBadan || "-";
   el("status").innerHTML = "";
 }
 
