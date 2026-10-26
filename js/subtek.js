@@ -845,7 +845,8 @@ async function dapatkanProfil(userId, noBadan = "") {
 }
 
 function semakPerananPentadbir(profil) {
-  return atas(profil?.peranan) === "SUBTEK";
+  const peranan = atas(profil?.peranan);
+  return ["SUBTEK", "PENTADBIR", "ADMIN"].includes(peranan);
 }
 
 
