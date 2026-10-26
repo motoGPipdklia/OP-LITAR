@@ -15718,8 +15718,9 @@ addEventListener('DOMContentLoaded',()=>{
 });
 
 /* ================================================================
-   SKPO AI ASSISTANT — SUBTEK V1
-   Edge Function yang dijangka: skpo-ai-assistant
+   SKPO AI ASSISTANT — SUBTEK V2 / FIX004
+   Edge Function: skpo-ai-assistant
+   Nota: Hantar DATA RINGKAS/AGREGAT kepada AI, bukan senarai petugas mentah.
 ================================================================ */
 function bukaSkpoAiSubtek() {
   tutupSemuaModulPentadbir();
@@ -15735,6 +15736,230 @@ function tutupSkpoAiSubtek() {
   if (!modul) return;
   modul.hidden = true;
   modul.style.display = "none";
+}
+
+function tambahKumpulanAiSubtek(map, kunci, status, selesai) {
+  const nama = teks(kunci) || "TIDAK DINYATAKAN";
+  const sediaAda = map.get(nama) || {
+    nama,
+    jumlah_petugas: 0,
+    hadir: 0,
+    belum_hadir: 0,
+    tidak_hadir: 0,
+    menunggu: 0,
+    diganti: 0,
+    selesai_tugas: 0
+  };
+
+  sediaAda.jumlah_petugas += 1;
+
+  if (status === "HADIR") sediaAda.hadir += 1;
+  else if (status === "BELUM HADIR") sediaAda.belum_hadir += 1;
+  else if (status === "TIDAK HADIR") sediaAda.tidak_hadir += 1;
+  else if (status === "MENUNGGU") sediaAda.menunggu += 1;
+  else if (status === "DIGANTI") sediaAda.diganti += 1;
+
+  if (selesai) sediaAda.selesai_tugas += 1;
+  map.set(nama, sediaAda);
+}
+
+function binaDataKehadiranAiSubtek() {
+  const petugas = (dataDashboard || []).filter(Boolean);
+  const mengikutTempat = new Map();
+  const mengikutJenis = new Map();
+
+  const ringkasan = {
+    jumlah_petugas: petugas.length,
+    hadir: 0,
+    belum_hadir: 0,
+    tidak_hadir: 0,
+    menunggu: 0,
+    diganti: 0,
+    selesai_tugas: 0,
+    masih_bertugas: 0
+  };
+
+  petugas.forEach(item => {
+    // dataDashboard menggunakan statusKehadiran, bukan item.status.
+    const status = atas(
+      item.statusKehadiran ||
+      item.status_kehadiran ||
+      item.status ||
+      "BELUM HADIR"
+    );
+
+    const selesai = Boolean(
+      item.checkout ||
+      item.masaCheckout ||
+      item.masa_checkout ||
+      ["CHECK-OUT", "SELESAI", "SELESAI TUGAS"].includes(status)
+    );
+
+    if (status === "HADIR") ringkasan.hadir += 1;
+    else if (status === "BELUM HADIR") ringkasan.belum_hadir += 1;
+    else if (status === "TIDAK HADIR") ringkasan.tidak_hadir += 1;
+    else if (status === "MENUNGGU") ringkasan.menunggu += 1;
+    else if (status === "DIGANTI") ringkasan.diganti += 1;
+
+    if (selesai) ringkasan.selesai_tugas += 1;
+    if (status === "HADIR" && !selesai) ringkasan.masih_bertugas += 1;
+
+    tambahKumpulanAiSubtek(
+      mengikutTempat,
+      item.tempatTugas || item.tempat_tugas || item.lokasi,
+      status,
+      selesai
+    );
+
+    tambahKumpulanAiSubtek(
+      mengikutJenis,
+      item.jenisTugas || item.jenis_tugas,
+      status,
+      selesai
+    );
+  });
+
+  const susun = map => Array.from(map.values()).sort((a, b) =>
+    b.jumlah_petugas - a.jumlah_petugas ||
+    a.nama.localeCompare(b.nama, "ms")
+  );
+
+  return {
+    ringkasan,
+    mengikut_tempat_tugas: susun(mengikutTempat).map(item => ({
+      tempat_tugas: item.nama,
+      jumlah_petugas: item.jumlah_petugas,
+      hadir: item.hadir,
+      belum_hadir: item.belum_hadir,
+      tidak_hadir: item.tidak_hadir,
+      menunggu: item.menunggu,
+      diganti: item.diganti,
+      selesai_tugas: item.selesai_tugas
+    })),
+    mengikut_jenis_tugas: susun(mengikutJenis).map(item => ({
+      jenis_tugas: item.nama,
+      jumlah_petugas: item.jumlah_petugas,
+      hadir: item.hadir,
+      belum_hadir: item.belum_hadir,
+      tidak_hadir: item.tidak_hadir,
+      menunggu: item.menunggu,
+      diganti: item.diganti,
+      selesai_tugas: item.selesai_tugas
+    }))
+  };
+}
+
+function binaDataOperasiAiSubtek(tarikh) {
+  const kehadiran = binaDataKehadiranAiSubtek();
+
+  let pengunjung = { keseluruhan: 0, terkini: 0 };
+  let kenderaan = { keseluruhan: 0, terkini: 0 };
+  let pengunjungLokasi = [];
+  let vvipVip = [];
+  let insiden = { tangkapan: 0, rampasan: 0, kemalangan: 0, ancaman: 0, jumlah: 0 };
+
+  try {
+    if (typeof statistikPengunjungLaporanHarian === "function") {
+      pengunjung = statistikPengunjungLaporanHarian();
+    }
+  } catch (error) {
+    console.warn("SKPO AI: statistik pengunjung tidak dapat dibina:", error);
+  }
+
+  try {
+    if (typeof statistikKenderaanLaporanHarian === "function") {
+      kenderaan = statistikKenderaanLaporanHarian();
+    }
+  } catch (error) {
+    console.warn("SKPO AI: statistik kenderaan tidak dapat dibina:", error);
+  }
+
+  try {
+    if (typeof ringkasanPengunjungMengikutLokasiPentadbir === "function") {
+      pengunjungLokasi = ringkasanPengunjungMengikutLokasiPentadbir().map(item => ({
+        lokasi: item.lokasi,
+        datang: Number(item.datang || 0),
+        keluar: Number(item.keluar || 0),
+        baki_semasa: Number(item.baki || 0),
+        bil_laporan: Number(item.bilLaporan || 0)
+      }));
+    }
+  } catch (error) {
+    console.warn("SKPO AI: pengunjung mengikut lokasi tidak dapat dibina:", error);
+  }
+
+  try {
+    if (typeof kumpulanVvipVipCarta === "function") {
+      vvipVip = kumpulanVvipVipCarta() || [];
+    }
+  } catch (error) {
+    console.warn("SKPO AI: statistik VVIP/VIP tidak dapat dibina:", error);
+  }
+
+  try {
+    if (typeof kiraInsidenCarta === "function") {
+      insiden = kiraInsidenCarta();
+    }
+  } catch (error) {
+    console.warn("SKPO AI: statistik insiden tidak dapat dibina:", error);
+  }
+
+  // Hanya catatan operasi yang relevan dihantar. Maklumat peribadi petugas,
+  // no. badan, telefon, device ID, pass dan nombor kenderaan individu tidak dihantar.
+  const laporanRingkas = (dataLaporanPetugasAdmin || []).slice(0, 100).map(item => {
+    const data = typeof dataLaporanCarta === "function" ? (dataLaporanCarta(item) || {}) : {};
+    const tugas = item.penugasan || {};
+    return {
+      masa: item.tarikh_masa || item.created_at || null,
+      jenis_tugas: tugas.jenis_tugas || data.jenis_tugas || "",
+      tempat_tugas: tugas.tempat_tugas || tugas.lokasi || data.tempat_tugas || data.lokasi || "",
+      jumlah_pengunjung: data.jumlah_pengunjung ?? item.jumlah_pengunjung ?? null,
+      jumlah_kenderaan: data.kenderaan?.jumlah ?? data.jumlah_kenderaan ?? item.jumlah_kenderaan ?? null,
+      vvip_vip: data.vvip_vip ?? item.vvip_vip ?? null,
+      tangkapan: data.tangkapan ?? null,
+      rampasan: data.rampasan ?? null,
+      kemalangan: data.kemalangan ?? null,
+      ancaman: data.jenis_ancaman ?? data.ancaman ?? null,
+      catatan: data.catatan || data.catatan_tindakan || data.catatan_no_repot || item.perkara_menarik || ""
+    };
+  }).filter(item =>
+    item.jenis_tugas || item.tempat_tugas || item.jumlah_pengunjung !== null ||
+    item.jumlah_kenderaan !== null || item.vvip_vip || item.tangkapan ||
+    item.rampasan || item.kemalangan || item.ancaman || item.catatan
+  );
+
+  return {
+    sumber: "SUBTEK",
+    tarikh,
+    nota_data: "Data ini telah diagregatkan oleh SKPO. Jangan senaraikan petugas individu.",
+    kehadiran: kehadiran.ringkasan,
+    kehadiran_mengikut_tempat_tugas: kehadiran.mengikut_tempat_tugas,
+    kehadiran_mengikut_jenis_tugas: kehadiran.mengikut_jenis_tugas,
+    operasi: {
+      pengunjung: {
+        jumlah_keseluruhan: Number(pengunjung?.keseluruhan || 0),
+        jumlah_terkini: Number(pengunjung?.terkini || 0),
+        mengikut_lokasi: pengunjungLokasi
+      },
+      kenderaan_pengunjung: {
+        jumlah_keseluruhan: Number(kenderaan?.keseluruhan || 0),
+        jumlah_terkini: Number(kenderaan?.terkini || 0)
+      },
+      vvip_vip: {
+        jumlah: Array.isArray(vvipVip) ? vvipVip.length : 0
+      },
+      insiden: {
+        tangkapan: Number(insiden?.tangkapan || 0),
+        rampasan: Number(insiden?.rampasan || 0),
+        kemalangan: Number(insiden?.kemalangan || 0),
+        ancaman: Number(insiden?.ancaman || 0),
+        jumlah: Number(insiden?.jumlah || 0)
+      }
+    },
+    laporan_operasi_ringkas: laporanRingkas,
+    bil_laporan_petugas: (dataLaporanPetugasAdmin || []).length,
+    bil_sitrep: (dataSitrepAdmin || []).length
+  };
 }
 
 async function tanyaSkpoAiSubtek(mod = "SOALAN") {
@@ -15754,48 +15979,22 @@ async function tanyaSkpoAiSubtek(mod = "SOALAN") {
     btn.disabled = true;
     btn.textContent = "AI SEDANG MENGANALISIS...";
   }
+
   paparMesej("statusSkpoAiSubtek", "SKPO AI sedang menganalisis data operasi...", "warning");
   if (output) output.textContent = "Sedang menjana analisis...";
 
   try {
     pastikanSupabase();
 
-    // Hantar hanya data operasi yang diperlukan. AI tidak menerima API key
-    // dan tidak boleh mengubah pangkalan data daripada payload ini.
-    const petugas = (dataDashboard || []).map(item => ({
-      no_badan: item.no_badan || item.noBadan || "",
-      pangkat: item.pangkat || "",
-      nama: item.nama || "",
-      call_sign: item.call_sign || item.callSign || "",
-      jenis_tugas: item.jenis_tugas || item.jenisTugas || "",
-      tempat_tugas: item.tempat_tugas || item.tempatTugas || item.lokasi || "",
-      penyelia: item.penyelia ?? false,
-      pemegang_set: item.pemegang_set ?? item.pemegangSet ?? false,
-      status: item.status || item.status_kehadiran || "",
-      check_in: item.check_in || item.checkin || item.masa_checkin || null,
-      check_out: item.check_out || item.checkout || item.masa_checkout || null
-    }));
+    const dataOperasi = binaDataOperasiAiSubtek(tarikh);
 
-    const kiraStatus = (nama) => petugas.filter(x => atas(x.status) === nama).length;
-    const ringkasanKehadiran = {
-      jumlah_petugas: petugas.length,
-      hadir: kiraStatus("HADIR"),
-      menunggu: kiraStatus("MENUNGGU"),
-      belum_hadir: kiraStatus("BELUM HADIR"),
-      tidak_hadir: kiraStatus("TIDAK HADIR"),
-      diganti: kiraStatus("DIGANTI"),
-      selesai_tugas: petugas.filter(x => ["CHECK-OUT", "SELESAI", "SELESAI TUGAS"].includes(atas(x.status))).length
-    };
-
-    const dataOperasi = {
-      sumber: "SUBTEK",
+    console.log("SKPO AI FIX004 payload ringkas:", {
       tarikh,
-      ringkasan_kehadiran: ringkasanKehadiran,
-      petugas,
-      laporan_petugas: dataLaporanPetugasAdmin || [],
-      sitrep: dataSitrepAdmin || [],
-      pass_kenderaan: dataPassKenderaanAdmin || []
-    };
+      tindakan,
+      jumlah_petugas: dataOperasi.kehadiran?.jumlah_petugas || 0,
+      bil_tempat_tugas: dataOperasi.kehadiran_mengikut_tempat_tugas?.length || 0,
+      bil_laporan: dataOperasi.bil_laporan_petugas || 0
+    });
 
     const { data, error } = await db.functions.invoke("skpo-ai-assistant", {
       body: {
@@ -15828,7 +16027,7 @@ async function tanyaSkpoAiSubtek(mod = "SOALAN") {
     if (output) output.textContent = "SKPO AI Assistant belum dapat menghasilkan analisis.";
     paparMesej(
       "statusSkpoAiSubtek",
-      escapeHtml(error?.message || "SKPO AI Assistant gagal dihubungi. Semak Edge Function dan OPENAI_API_KEY."),
+      escapeHtml(error?.message || "SKPO AI Assistant gagal dihubungi. Semak Edge Function dan GEMINI_API_KEY."),
       "error"
     );
   } finally {
