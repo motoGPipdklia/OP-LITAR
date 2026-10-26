@@ -2104,7 +2104,7 @@ function binaRekodImportPenggunaCsv(barisCsv) {
     throw new Error(`Kolum wajib tidak dijumpai: ${tiada.join(", ")}. Gunakan templat pengguna yang disediakan.`);
   }
 
-  const perananSah = ["PETUGAS", "PENYELIA", "URUSETIA", "PENTADBIR", "TSM", "PUSAT_KAWALAN"];
+  const perananSah = ["PETUGAS", "PENYELIA", "URUSETIA", "PENTADBIR", "TSM", "SUBTEK", "PUSAT_KAWALAN"];
   const ambil = (baris, nama) => indeks[nama] >= 0 ? teks(baris[indeks[nama]]) : "";
 
   const rekod = barisCsv.slice(1).map((baris, kedudukan) => {
