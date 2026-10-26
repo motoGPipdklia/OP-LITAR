@@ -15743,6 +15743,99 @@ function tutupSkpoAiSubtek() {
   modul.style.display = "none";
 }
 
+// FIX007: Render jawapan AI secara selamat dan profesional.
+// Hanya subset Markdown asas disokong; HTML daripada model sentiasa di-escape.
+function formatJawapanSkpoAiSubtek(nilai) {
+  const sumber = String(nilai ?? "").replace(/\r\n?/g, "\n").trim();
+  if (!sumber) return "";
+
+  const escapeHtml = (v) => String(v).replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
+
+  const inline = (v) => {
+    let x = escapeHtml(v);
+    x = x.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
+    x = x.replace(/__([^_\n]+)__/g, "<strong>$1</strong>");
+    x = x.replace(/`([^`\n]+)`/g, "<code>$1</code>");
+    return x;
+  };
+
+  const lines = sumber.split("\n");
+  const html = [];
+  let listType = null;
+
+  const tutupList = () => {
+    if (listType) html.push(`</${listType}>`);
+    listType = null;
+  };
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) { tutupList(); continue; }
+
+    const headingMd = line.match(/^#{1,4}\s+(.+)$/);
+    const headingCaps = !headingMd && line.length <= 80 &&
+      /^[A-Z0-9À-ÖØ-Þ /&()\-:]+$/.test(line) && /[A-ZÀ-ÖØ-Þ]/.test(line);
+
+    if (headingMd || headingCaps) {
+      tutupList();
+      const tajuk = headingMd ? headingMd[1] : line;
+      const kelas = /^(RINGKASAN OPERASI|ANALISIS KEHADIRAN|ISU DIKESAN|SITUATION REPORT|SITREP)/i.test(tajuk)
+        ? "skpo-ai-title" : "skpo-ai-heading";
+      html.push(`<div class="${kelas}">${inline(tajuk)}</div>`);
+      continue;
+    }
+
+    const numbered = line.match(/^(\d+)[.)]\s+(.+)$/);
+    const bullet = line.match(/^[-*•]\s+(.+)$/);
+
+    if (numbered) {
+      if (listType !== "ol") { tutupList(); listType = "ol"; html.push('<ol class="skpo-ai-list">'); }
+      html.push(`<li>${inline(numbered[2])}</li>`);
+      continue;
+    }
+
+    if (bullet) {
+      if (listType !== "ul") { tutupList(); listType = "ul"; html.push('<ul class="skpo-ai-list">'); }
+      html.push(`<li>${inline(bullet[1])}</li>`);
+      continue;
+    }
+
+    tutupList();
+    html.push(`<p>${inline(line)}</p>`);
+  }
+
+  tutupList();
+  return html.join("");
+}
+
+function paparJawapanSkpoAiSubtek(output, jawapan) {
+  if (!output) return;
+  output.innerHTML = formatJawapanSkpoAiSubtek(jawapan);
+  output.style.whiteSpace = "normal";
+  output.style.overflow = "visible";
+  output.style.maxHeight = "none";
+  output.style.height = "auto";
+  output.style.lineHeight = "1.65";
+
+  if (!document.getElementById("skpoAiFix007Style")) {
+    const style = document.createElement("style");
+    style.id = "skpoAiFix007Style";
+    style.textContent = `
+      #jawapanSkpoAiSubtek{padding:20px 22px!important;word-break:break-word;}
+      #jawapanSkpoAiSubtek .skpo-ai-title{font-size:1.22rem;font-weight:800;margin:0 0 22px;color:#fff;letter-spacing:.02em;}
+      #jawapanSkpoAiSubtek .skpo-ai-heading{font-size:1.02rem;font-weight:800;margin:24px 0 10px;color:#f4c842;letter-spacing:.02em;}
+      #jawapanSkpoAiSubtek p{margin:8px 0;color:inherit;}
+      #jawapanSkpoAiSubtek strong{font-weight:800;color:#fff;}
+      #jawapanSkpoAiSubtek .skpo-ai-list{margin:8px 0 16px;padding-left:26px;}
+      #jawapanSkpoAiSubtek .skpo-ai-list li{margin:5px 0;padding-left:3px;}
+      #jawapanSkpoAiSubtek code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px;}
+    `;
+    document.head.appendChild(style);
+  }
+}
+
 async function tanyaSkpoAiSubtek(mod = "SOALAN") {
   const btn=el("btnTanyaSkpoAiSubtek"), output=el("jawapanSkpoAiSubtek");
   const soalan=teks(el("soalanSkpoAiSubtek")?.value), tarikh=el("tarikh")?.value||hariIniMalaysia(), tindakan=atas(mod||"SOALAN");
@@ -15760,7 +15853,7 @@ async function tanyaSkpoAiSubtek(mod = "SOALAN") {
     const dataOperasi={sumber:"SUBTEK",tarikh,nota:"Semua angka telah dikira oleh SKPO. Gunakan sebagai angka muktamad. Jangan kira semula daripada rekod individu.",ringkasan_kehadiran:{jumlah_petugas:petugas.length,hadir:kira("HADIR"),belum_hadir:kira("BELUM HADIR"),tidak_hadir:kira("TIDAK HADIR"),menunggu:kira("MENUNGGU"),diganti:kira("DIGANTI"),selesai_tugas:selesai,masih_bertugas:petugas.filter(x=>atas(x.statusKehadiran)==="HADIR"&&!(x.checkout||x.masaCheckout)).length},statistik_operasi:{jumlah_pengunjung_keseluruhan_peak:pengunjung.keseluruhan,jumlah_pengunjung_terkini:pengunjung.terkini,jumlah_kenderaan_pengunjung_keseluruhan_peak:kenderaan.keseluruhan,jumlah_kenderaan_pengunjung_terkini:kenderaan.terkini,vvip_vip:vvip.length,tangkapan:insiden.tangkapan||0,rampasan:insiden.rampasan||0,kemalangan:insiden.kemalangan||0,ancaman:insiden.ancaman||0,jumlah_laporan_operasi:(dataCartaLaporanPentadbir||[]).length},kehadiran_mengikut_jenis_tugas:ringkasanKumpulan("jenisTugas"),kehadiran_mengikut_tempat_tugas:ringkasanKumpulan("tempatTugas"),laporan_penting:laporanRingkas};
     const {data,error}=await db.functions.invoke("skpo-ai-assistant",{body:{tindakan,soalan:tindakan==="SOALAN"?soalan:"",tarikh,dataOperasi}});
     if(error){let butiran=teks(error?.message);try{const c=error?.context;if(c&&typeof c.json==="function"){const r=await c.json();butiran=teks(r?.error||r?.message||butiran);}}catch(_){}throw new Error(butiran||"Edge Function skpo-ai-assistant gagal dipanggil.");}
-    const jawapan=teks(data?.jawapan||data?.answer||data?.result);if(!jawapan)throw new Error("SKPO AI tidak memulangkan jawapan.");if(output)output.textContent=jawapan;paparMesej("statusSkpoAiSubtek","Analisis AI berjaya dijana.","success");
+    const jawapan=teks(data?.jawapan||data?.answer||data?.result);if(!jawapan)throw new Error("SKPO AI tidak memulangkan jawapan.");if(output)paparJawapanSkpoAiSubtek(output,jawapan);paparMesej("statusSkpoAiSubtek","Analisis AI berjaya dijana.","success");
   }catch(error){console.error("SKPO AI gagal:",error);if(output)output.textContent="SKPO AI Assistant belum dapat menghasilkan analisis.";paparMesej("statusSkpoAiSubtek",teks(error?.message)||"SKPO AI gagal menjana analisis.","error");}
   finally{if(btn){btn.disabled=false;btn.textContent="HANTAR SOALAN";}}
 }
