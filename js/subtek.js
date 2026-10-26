@@ -7472,27 +7472,17 @@ async function muatDataCartaPentadbir() {
       }
     }
 
-    // FIX005: Ambil laporan terus mengikut julat tarikh Malaysia.
-    // Jangan ambil 1000 rekod global dahulu kerana pada hari lama seperti
-    // 04/10/2026 rekod boleh tercicir apabila jumlah keseluruhan pelaporan
-    // sudah melebihi had tersebut. Ini memastikan SUBTEK membaca sumber
-    // pelaporan yang sama untuk membina Carta Operasi seperti Pentadbir.
-    const mulaHari = `${tarikh}T00:00:00+08:00`;
-    const esok = new Date(`${tarikh}T00:00:00+08:00`);
-    esok.setDate(esok.getDate() + 1);
-    const tarikhEsok = new Intl.DateTimeFormat("en-CA", {
-      timeZone: ZON_MASA,
-      year: "numeric", month: "2-digit", day: "2-digit"
-    }).format(esok);
-    const akhirHari = `${tarikhEsok}T00:00:00+08:00`;
-
+    // FIX006: ambil laporan terus dalam julat tarikh Malaysia yang dipilih.
+    const mulaHari = new Date(`${tarikh}T00:00:00+08:00`).toISOString();
+    const tamatHariObj = new Date(`${tarikh}T00:00:00+08:00`);
+    tamatHariObj.setDate(tamatHariObj.getDate() + 1);
     const laporanRes = await denganHadMasa(
       db.from("pelaporan")
         .select("*")
         .gte("tarikh_masa", mulaHari)
-        .lt("tarikh_masa", akhirHari)
+        .lt("tarikh_masa", tamatHariObj.toISOString())
         .order("tarikh_masa", { ascending: true })
-        .limit(5000)
+        .limit(10000)
     );
 
     if (laporanRes.error) {
@@ -15754,125 +15744,24 @@ function tutupSkpoAiSubtek() {
 }
 
 async function tanyaSkpoAiSubtek(mod = "SOALAN") {
-  const btn = el("btnTanyaSkpoAiSubtek");
-  const output = el("jawapanSkpoAiSubtek");
-  const soalan = teks(el("soalanSkpoAiSubtek")?.value);
-  const tarikh = el("tarikh")?.value || hariIniMalaysia();
-  const tindakan = atas(mod || "SOALAN");
-
-  if (tindakan === "SOALAN" && !soalan) {
-    paparMesej("statusSkpoAiSubtek", "Sila masukkan soalan untuk SKPO AI.", "warning");
-    el("soalanSkpoAiSubtek")?.focus();
-    return;
-  }
-
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = "AI SEDANG MENGANALISIS...";
-  }
-  paparMesej("statusSkpoAiSubtek", "SKPO AI sedang menganalisis data operasi...", "warning");
-  if (output) output.textContent = "Sedang menjana analisis...";
-
-  try {
+  const btn=el("btnTanyaSkpoAiSubtek"), output=el("jawapanSkpoAiSubtek");
+  const soalan=teks(el("soalanSkpoAiSubtek")?.value), tarikh=el("tarikh")?.value||hariIniMalaysia(), tindakan=atas(mod||"SOALAN");
+  if(tindakan==="SOALAN"&&!soalan){paparMesej("statusSkpoAiSubtek","Sila masukkan soalan untuk SKPO AI.","warning");el("soalanSkpoAiSubtek")?.focus();return;}
+  if(btn){btn.disabled=true;btn.textContent="AI SEDANG MENGANALISIS...";} paparMesej("statusSkpoAiSubtek","SKPO AI sedang menganalisis data operasi...","warning"); if(output)output.textContent="Sedang menjana analisis...";
+  try{
     pastikanSupabase();
-
-    // FIX005: Pastikan Carta Operasi bagi tarikh pilihan telah dimuatkan
-    // sebelum statistik dihantar kepada AI. Dengan ini nilai Pengunjung dan
-    // Kenderaan menggunakan formula peak yang sama seperti Laporan
-    // Keseluruhan Harian Pentadbir.
-    if (el("tarikhCartaPentadbir")) el("tarikhCartaPentadbir").value = tarikh;
-    await muatDataCartaPentadbir();
-    const statistikPengunjungAi = statistikPengunjungLaporanHarian();
-    const statistikKenderaanAi = statistikKenderaanLaporanHarian();
-    const statistikInsidenAi = kiraInsidenCarta();
-    const statistikVvipAi = kumpulanVvipVipCarta();
-
-    // Hantar hanya data operasi yang diperlukan. AI tidak menerima API key
-    // dan tidak boleh mengubah pangkalan data daripada payload ini.
-    const petugas = (dataDashboard || []).map(item => ({
-      no_badan: item.no_badan || item.noBadan || "",
-      pangkat: item.pangkat || "",
-      nama: item.nama || "",
-      call_sign: item.call_sign || item.callSign || "",
-      jenis_tugas: item.jenis_tugas || item.jenisTugas || "",
-      tempat_tugas: item.tempat_tugas || item.tempatTugas || item.lokasi || "",
-      penyelia: item.penyelia ?? false,
-      pemegang_set: item.pemegang_set ?? item.pemegangSet ?? false,
-      status: item.status || item.status_kehadiran || "",
-      check_in: item.check_in || item.checkin || item.masa_checkin || null,
-      check_out: item.check_out || item.checkout || item.masa_checkout || null
-    }));
-
-    const kiraStatus = (nama) => petugas.filter(x => atas(x.status) === nama).length;
-    const ringkasanKehadiran = {
-      jumlah_petugas: petugas.length,
-      hadir: kiraStatus("HADIR"),
-      menunggu: kiraStatus("MENUNGGU"),
-      belum_hadir: kiraStatus("BELUM HADIR"),
-      tidak_hadir: kiraStatus("TIDAK HADIR"),
-      diganti: kiraStatus("DIGANTI"),
-      selesai_tugas: petugas.filter(x => ["CHECK-OUT", "SELESAI", "SELESAI TUGAS"].includes(atas(x.status))).length
-    };
-
-    const dataOperasi = {
-      sumber: "SUBTEK",
-      tarikh,
-      ringkasan_kehadiran: ringkasanKehadiran,
-      statistik_operasi: {
-        pengunjung_keseluruhan_tertinggi: statistikPengunjungAi.keseluruhan,
-        pengunjung_terkini: statistikPengunjungAi.terkini,
-        kenderaan_pengunjung_keseluruhan_tertinggi: statistikKenderaanAi.keseluruhan,
-        kenderaan_pengunjung_terkini: statistikKenderaanAi.terkini,
-        vvip_vip: statistikVvipAi.length,
-        tangkapan: Number(statistikInsidenAi?.tangkapan || 0),
-        rampasan: Number(statistikInsidenAi?.rampasan || 0),
-        kemalangan: Number(statistikInsidenAi?.kemalangan || 0),
-        ancaman: Number(statistikInsidenAi?.ancaman || 0)
-      },
-      petugas,
-      laporan_petugas: dataLaporanPetugasAdmin || [],
-      sitrep: dataSitrepAdmin || [],
-      pass_kenderaan: dataPassKenderaanAdmin || []
-    };
-
-    const { data, error } = await db.functions.invoke("skpo-ai-assistant", {
-      body: {
-        tindakan,
-        soalan: tindakan === "SOALAN" ? soalan : "",
-        tarikh,
-        dataOperasi
-      }
-    });
-
-    if (error) {
-      let butiran = teks(error?.message);
-      try {
-        const context = error?.context;
-        if (context && typeof context.json === "function") {
-          const ralatServer = await context.json();
-          butiran = teks(ralatServer?.error || ralatServer?.message || butiran);
-        }
-      } catch (_) {}
-      throw new Error(butiran || "Edge Function skpo-ai-assistant gagal dipanggil.");
-    }
-
-    const jawapan = teks(data?.jawapan || data?.answer || data?.result);
-    if (!jawapan) throw new Error("SKPO AI tidak memulangkan jawapan.");
-
-    if (output) output.textContent = jawapan;
-    paparMesej("statusSkpoAiSubtek", "Analisis AI berjaya dijana.", "success");
-  } catch (error) {
-    console.error("SKPO AI gagal:", error);
-    if (output) output.textContent = "SKPO AI Assistant belum dapat menghasilkan analisis.";
-    paparMesej(
-      "statusSkpoAiSubtek",
-      escapeHtml(error?.message || "SKPO AI Assistant gagal dihubungi. Semak Edge Function dan OPENAI_API_KEY."),
-      "error"
-    );
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = "HANTAR SOALAN";
-    }
-  }
+    if(el("tarikhCartaPentadbir")) el("tarikhCartaPentadbir").value=tarikh;
+    await muatData(true); await muatDataCartaPentadbir();
+    const petugas=dataDashboard||[], kira=n=>petugas.filter(x=>atas(x.statusKehadiran)===n).length;
+    const ringkasanKumpulan=(medan)=>{const m=new Map();petugas.forEach(item=>{const nama=teks(item?.[medan])||"TIDAK DINYATAKAN";if(!m.has(nama))m.set(nama,{nama,kekuatan:0,hadir:0,belum_hadir:0,tidak_hadir:0,menunggu:0,diganti:0,selesai_tugas:0,masih_bertugas:0});const r=m.get(nama),st=atas(item.statusKehadiran);r.kekuatan++;if(st==="HADIR")r.hadir++;if(st==="BELUM HADIR")r.belum_hadir++;if(st==="TIDAK HADIR")r.tidak_hadir++;if(st==="MENUNGGU")r.menunggu++;if(st==="DIGANTI")r.diganti++;if(item.checkout||item.masaCheckout)r.selesai_tugas++;if(st==="HADIR"&&!(item.checkout||item.masaCheckout))r.masih_bertugas++;});return[...m.values()].sort((a,b)=>b.kekuatan-a.kekuatan||a.nama.localeCompare(b.nama,"ms"));};
+    const pengunjung=statistikPengunjungLaporanHarian(), kenderaan=statistikKenderaanLaporanHarian(), vvip=kumpulanVvipVipCarta(), insiden=kiraInsidenCarta();
+    const laporanRingkas=(dataCartaLaporanPentadbir||[]).slice(-80).map(item=>{const d=dataLaporanCarta(item)||{};return{masa:item.tarikh_masa||null,jenis_tugas:item.jenis_tugas||item.penugasan?.jenis_tugas||"",tempat_tugas:item.tempat_tugas||item.penugasan?.tempat_tugas||item.penugasan?.lokasi||"",perkara_menarik:d.perkara_menarik??d.catatan??"",tangkapan:d.tangkapan??"",rampasan:d.rampasan??"",kemalangan:d.kemalangan??"",ancaman:d.jenis_ancaman??d.ancaman??""};}).filter(x=>x.perkara_menarik||x.tangkapan||x.rampasan||x.kemalangan||x.ancaman);
+    const selesai=petugas.filter(x=>Boolean(x.checkout||x.masaCheckout)).length;
+    const dataOperasi={sumber:"SUBTEK",tarikh,nota:"Semua angka telah dikira oleh SKPO. Gunakan sebagai angka muktamad. Jangan kira semula daripada rekod individu.",ringkasan_kehadiran:{jumlah_petugas:petugas.length,hadir:kira("HADIR"),belum_hadir:kira("BELUM HADIR"),tidak_hadir:kira("TIDAK HADIR"),menunggu:kira("MENUNGGU"),diganti:kira("DIGANTI"),selesai_tugas:selesai,masih_bertugas:petugas.filter(x=>atas(x.statusKehadiran)==="HADIR"&&!(x.checkout||x.masaCheckout)).length},statistik_operasi:{jumlah_pengunjung_keseluruhan_peak:pengunjung.keseluruhan,jumlah_pengunjung_terkini:pengunjung.terkini,jumlah_kenderaan_pengunjung_keseluruhan_peak:kenderaan.keseluruhan,jumlah_kenderaan_pengunjung_terkini:kenderaan.terkini,vvip_vip:vvip.length,tangkapan:insiden.tangkapan||0,rampasan:insiden.rampasan||0,kemalangan:insiden.kemalangan||0,ancaman:insiden.ancaman||0,jumlah_laporan_operasi:(dataCartaLaporanPentadbir||[]).length},kehadiran_mengikut_jenis_tugas:ringkasanKumpulan("jenisTugas"),kehadiran_mengikut_tempat_tugas:ringkasanKumpulan("tempatTugas"),laporan_penting:laporanRingkas};
+    const {data,error}=await db.functions.invoke("skpo-ai-assistant",{body:{tindakan,soalan:tindakan==="SOALAN"?soalan:"",tarikh,dataOperasi}});
+    if(error){let butiran=teks(error?.message);try{const c=error?.context;if(c&&typeof c.json==="function"){const r=await c.json();butiran=teks(r?.error||r?.message||butiran);}}catch(_){}throw new Error(butiran||"Edge Function skpo-ai-assistant gagal dipanggil.");}
+    const jawapan=teks(data?.jawapan||data?.answer||data?.result);if(!jawapan)throw new Error("SKPO AI tidak memulangkan jawapan.");if(output)output.textContent=jawapan;paparMesej("statusSkpoAiSubtek","Analisis AI berjaya dijana.","success");
+  }catch(error){console.error("SKPO AI gagal:",error);if(output)output.textContent="SKPO AI Assistant belum dapat menghasilkan analisis.";paparMesej("statusSkpoAiSubtek",teks(error?.message)||"SKPO AI gagal menjana analisis.","error");}
+  finally{if(btn){btn.disabled=false;btn.textContent="HANTAR SOALAN";}}
 }
+
