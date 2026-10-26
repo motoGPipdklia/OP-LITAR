@@ -1,5 +1,7 @@
 "use strict";
 
+/* SUBTEK FIX008 — Carta Operasi: kad Pengunjung/Kenderaan guna nilai PEAK */
+
 /* SKPO FORMULA 1 BUILD: 20260928-RANK-PB-HOLDER-FIX-017 */
 
 /* ================================================================
@@ -8886,8 +8888,19 @@ function kiraInsidenCarta() {
 
 
 function paparRingkasanCartaPentadbir() {
-  const kenderaan =
-    pecahanKenderaanSemasaCarta();
+  /*
+    FIX008 — Kad ringkasan CARTA OPERASI mesti memaparkan NILAI TERTINGGI (PEAK),
+    sama seperti LAPORAN KESELURUHAN HARIAN dan SKPO AI.
+
+    Rekod manual carta ialah pergerakan tambah/tolak. Oleh itu nilai akhir boleh
+    kembali kepada 0 walaupun jumlah tertinggi operasi pernah mencecah angka
+    yang besar. Kad utama tidak lagi menggunakan nilai akhir/semasa.
+  */
+  const statistikPengunjung =
+    statistikPengunjungLaporanHarian();
+
+  const statistikKenderaan =
+    statistikKenderaanLaporanHarian();
 
   const vvipVip =
     kumpulanVvipVipCarta();
@@ -8897,12 +8910,12 @@ function paparRingkasanCartaPentadbir() {
 
   if (el("cartaJumlahPengunjung")) {
     el("cartaJumlahPengunjung").textContent =
-      jumlahPengunjungSemasaCarta().toLocaleString("ms-MY");
+      statistikPengunjung.keseluruhan.toLocaleString("ms-MY");
   }
 
   if (el("cartaJumlahKenderaan")) {
     el("cartaJumlahKenderaan").textContent =
-      kenderaan.jumlah.toLocaleString("ms-MY");
+      statistikKenderaan.keseluruhan.toLocaleString("ms-MY");
   }
 
   if (el("cartaJumlahVvipVip")) {
@@ -15857,4 +15870,3 @@ async function tanyaSkpoAiSubtek(mod = "SOALAN") {
   }catch(error){console.error("SKPO AI gagal:",error);if(output)output.textContent="SKPO AI Assistant belum dapat menghasilkan analisis.";paparMesej("statusSkpoAiSubtek",teks(error?.message)||"SKPO AI gagal menjana analisis.","error");}
   finally{if(btn){btn.disabled=false;btn.textContent="HANTAR SOALAN";}}
 }
-
