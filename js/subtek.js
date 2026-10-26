@@ -846,7 +846,14 @@ async function dapatkanProfil(userId, noBadan = "") {
 
 function semakPerananPentadbir(profil) {
   const peranan = atas(profil?.peranan);
-  return ["SUBTEK", "PENTADBIR", "ADMIN"].includes(peranan);
+  const noBadan = atas(profil?.no_badan);
+  const email = teks(profil?.email).toLowerCase();
+
+  // SUBTEK mempunyai akses modul ini. Pentadbir ialah super-admin dan
+  // boleh membuka SUBTEK tanpa dialihkan semula ke admin.html.
+  return ["SUBTEK", "PENTADBIR", "ADMIN"].includes(peranan) ||
+    noBadan === NO_BADAN_ADMIN_UTAMA_F1 ||
+    email === EMAIL_ADMIN_UTAMA_F1;
 }
 
 
@@ -15735,47 +15742,82 @@ async function tanyaSkpoAiSubtek(mod = "SOALAN") {
   const output = el("jawapanSkpoAiSubtek");
   const soalan = teks(el("soalanSkpoAiSubtek")?.value);
   const tarikh = el("tarikh")?.value || hariIniMalaysia();
+  const tindakan = atas(mod || "SOALAN");
 
-  const arahan = {
-    RINGKASKAN_OPERASI: "Ringkaskan situasi operasi berdasarkan data SKPO yang dibekalkan.",
-    ANALISIS_KEHADIRAN: "Analisis status kehadiran petugas dan nyatakan perkara yang memerlukan perhatian.",
-    KESAN_ISU: "Kesan isu, anomali atau keadaan operasi yang memerlukan perhatian berdasarkan data SKPO.",
-    JANA_SITREP: "Sediakan draf SITREP operasi yang ringkas, profesional dan berasaskan data SKPO sahaja.",
-    SOALAN: soalan
-  }[mod] || soalan;
-
-  if (!arahan) {
+  if (tindakan === "SOALAN" && !soalan) {
     paparMesej("statusSkpoAiSubtek", "Sila masukkan soalan untuk SKPO AI.", "warning");
+    el("soalanSkpoAiSubtek")?.focus();
     return;
   }
 
-  if (btn) { btn.disabled = true; btn.textContent = "AI SEDANG MENGANALISIS..."; }
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "AI SEDANG MENGANALISIS...";
+  }
   paparMesej("statusSkpoAiSubtek", "SKPO AI sedang menganalisis data operasi...", "warning");
   if (output) output.textContent = "Sedang menjana analisis...";
 
   try {
-    const ringkasanDashboard = (dataDashboard || []).map(item => ({
+    pastikanSupabase();
+
+    // Hantar hanya data operasi yang diperlukan. AI tidak menerima API key
+    // dan tidak boleh mengubah pangkalan data daripada payload ini.
+    const petugas = (dataDashboard || []).map(item => ({
       no_badan: item.no_badan || item.noBadan || "",
       pangkat: item.pangkat || "",
       nama: item.nama || "",
+      call_sign: item.call_sign || item.callSign || "",
       jenis_tugas: item.jenis_tugas || item.jenisTugas || "",
       tempat_tugas: item.tempat_tugas || item.tempatTugas || item.lokasi || "",
-      status: item.status || item.status_kehadiran || ""
+      penyelia: item.penyelia ?? false,
+      pemegang_set: item.pemegang_set ?? item.pemegangSet ?? false,
+      status: item.status || item.status_kehadiran || "",
+      check_in: item.check_in || item.checkin || item.masa_checkin || null,
+      check_out: item.check_out || item.checkout || item.masa_checkout || null
     }));
+
+    const kiraStatus = (nama) => petugas.filter(x => atas(x.status) === nama).length;
+    const ringkasanKehadiran = {
+      jumlah_petugas: petugas.length,
+      hadir: kiraStatus("HADIR"),
+      menunggu: kiraStatus("MENUNGGU"),
+      belum_hadir: kiraStatus("BELUM HADIR"),
+      tidak_hadir: kiraStatus("TIDAK HADIR"),
+      diganti: kiraStatus("DIGANTI"),
+      selesai_tugas: petugas.filter(x => ["CHECK-OUT", "SELESAI", "SELESAI TUGAS"].includes(atas(x.status))).length
+    };
+
+    const dataOperasi = {
+      sumber: "SUBTEK",
+      tarikh,
+      ringkasan_kehadiran: ringkasanKehadiran,
+      petugas,
+      laporan_petugas: dataLaporanPetugasAdmin || [],
+      sitrep: dataSitrepAdmin || [],
+      pass_kenderaan: dataPassKenderaanAdmin || []
+    };
 
     const { data, error } = await db.functions.invoke("skpo-ai-assistant", {
       body: {
-        sumber: "SUBTEK",
+        tindakan,
+        soalan: tindakan === "SOALAN" ? soalan : "",
         tarikh,
-        mod,
-        arahan,
-        data_operasi: ringkasanDashboard,
-        laporan_petugas: dataLaporanPetugasAdmin || [],
-        sitrep: dataSitrepAdmin || []
+        dataOperasi
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      let butiran = teks(error?.message);
+      try {
+        const context = error?.context;
+        if (context && typeof context.json === "function") {
+          const ralatServer = await context.json();
+          butiran = teks(ralatServer?.error || ralatServer?.message || butiran);
+        }
+      } catch (_) {}
+      throw new Error(butiran || "Edge Function skpo-ai-assistant gagal dipanggil.");
+    }
+
     const jawapan = teks(data?.jawapan || data?.answer || data?.result);
     if (!jawapan) throw new Error("SKPO AI tidak memulangkan jawapan.");
 
@@ -15783,13 +15825,16 @@ async function tanyaSkpoAiSubtek(mod = "SOALAN") {
     paparMesej("statusSkpoAiSubtek", "Analisis AI berjaya dijana.", "success");
   } catch (error) {
     console.error("SKPO AI gagal:", error);
-    if (output) output.textContent = "SKPO AI Assistant belum dapat dihubungi.";
+    if (output) output.textContent = "SKPO AI Assistant belum dapat menghasilkan analisis.";
     paparMesej(
       "statusSkpoAiSubtek",
-      "SKPO AI belum dikonfigurasi atau Edge Function skpo-ai-assistant belum dipasang. Modul SUBTEK lain masih boleh digunakan seperti biasa.",
+      escapeHtml(error?.message || "SKPO AI Assistant gagal dihubungi. Semak Edge Function dan OPENAI_API_KEY."),
       "error"
     );
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = "HANTAR SOALAN"; }
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "HANTAR SOALAN";
+    }
   }
 }
