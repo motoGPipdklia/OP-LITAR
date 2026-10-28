@@ -1,13 +1,13 @@
 "use strict";
 
-/* SKPO FORMULA 1 — Petugas (GitHub Pages + Supabase) */
+/* SKPO OP LITAR — Petugas (GitHub Pages + Supabase) */
 
 const db = window.supabaseClient;
 const ZON_MASA = "Asia/Kuala_Lumpur";
 const SELANG_SEMAKAN_STATUS = 15000;
 const HAD_KETEPATAN_GPS = 100;
 
-/* Kunci tempatan khusus Formula 1 supaya tidak bercampur dengan MotoGP. */
+/* Kunci tempatan sedia ada dikekalkan untuk keserasian data peranti/sesi. */
 const KUNCI_USER_F1 = "skpoF1User";
 const KUNCI_DEVICE_F1 = "skpoF1DeviceId";
 
@@ -1882,15 +1882,16 @@ function darjahKeRadian(v) { return v * Math.PI / 180; }
 
 
 /* ================================================================
-   MUAT TURUN JADUAL FORMULA 1
+   MUAT TURUN JADUAL OP LITAR
    Kategori: TUGAS AM / BSJ / BSJN / BSJK / CAW. KHAS
    Fail PDF disimpan di folder: jadual/
 ================================================================ */
 
 const JADUAL_F1_TARIKH = [
-  { nilai: "02102026", label: "02/10/2026" },
-  { nilai: "03102026", label: "03/10/2026" },
-  { nilai: "04102026", label: "04/10/2026" }
+  { nilai: "29102026", label: "29/10/2026" },
+  { nilai: "30102026", label: "30/10/2026" },
+  { nilai: "31102026", label: "31/10/2026" },
+  { nilai: "01112026", label: "01/11/2026" }
 ];
 
 const JADUAL_F1_KATEGORI = [
@@ -1960,7 +1961,7 @@ function pasangModulMuatTurunJadual() {
   modal.innerHTML = `
     <div class="jadual-dialog">
       <h2 id="tajukMuatTurunJadual">Muat Turun Jadual</h2>
-      <p>Pilih tarikh dan kategori jadual Formula 1.</p>
+      <p>Pilih tarikh dan kategori jadual OP LITAR.</p>
 
       <div class="jadual-field">
         <label for="pilihTarikhJadual">Tarikh</label>
@@ -2020,7 +2021,7 @@ function tutupMuatTurunJadual() {
 function namaFailJadualFormula1(tarikh, kategori) {
   const item = JADUAL_F1_KATEGORI.find(x => x.nilai === kategori);
   if (!item) return "";
-  return `JADUAL FORMULA 1 ${item.fail} ${tarikh}.pdf`;
+  return `JADUAL PENUGASAN OPS LITAR 2026 ${item.fail} ${tarikh}.pdf`;
 }
 
 async function muatTurunJadualDipilih() {
