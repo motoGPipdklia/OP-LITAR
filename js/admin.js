@@ -1,6 +1,6 @@
 "use strict";
 
-/* SKPO FORMULA 1 BUILD: 20260928-RANK-PB-HOLDER-FIX-017 */
+/* SKPO OP LITAR BUILD: 20261029-JAWATANKUASA-SUSUNAN-001 */
 
 /* ================================================================
    SKPO FORMULA 1 — PENTADBIR
@@ -13213,39 +13213,130 @@ if (!senarai.length) {
 function dataJawatankuasaPentadbir() {
   return [...dataJawatankuasaOperasiPentadbir]
     .sort((a, b) => {
-      const kumpulanA =
-        atas(a.jawatankuasa);
+      const kumpulanA = atas(a.jawatankuasa);
+      const kumpulanB = atas(b.jawatankuasa);
 
-      const kumpulanB =
-        atas(b.jawatankuasa);
-
-      if (
-        kumpulanA !== kumpulanB
-      ) {
-        return kumpulanA.localeCompare(
-          kumpulanB,
-          "ms"
-        );
+      if (kumpulanA !== kumpulanB) {
+        return kumpulanA.localeCompare(kumpulanB, "ms");
       }
 
-      const tugasA =
-        atas(a.tugas);
+      /*
+        FIX SUSUNAN JAWATANKUASA:
+        Nombor BIL kini mengikut kolum susunan di Supabase,
+        bukan lagi mengikut abjad TUGAS / NAMA.
+      */
+      const susunanA = Number(a.susunan);
+      const susunanB = Number(b.susunan);
+      const adaSusunanA = Number.isFinite(susunanA) && susunanA > 0;
+      const adaSusunanB = Number.isFinite(susunanB) && susunanB > 0;
 
-      const tugasB =
-        atas(b.tugas);
-
-      if (tugasA !== tugasB) {
-        return tugasA.localeCompare(
-          tugasB,
-          "ms"
-        );
+      if (adaSusunanA && adaSusunanB && susunanA !== susunanB) {
+        return susunanA - susunanB;
+      }
+      if (adaSusunanA !== adaSusunanB) {
+        return adaSusunanA ? -1 : 1;
       }
 
-      return atas(a.nama).localeCompare(
-        atas(b.nama),
-        "ms"
-      );
+      const tugasA = atas(a.tugas);
+      const tugasB = atas(b.tugas);
+      if (tugasA !== tugasB) return tugasA.localeCompare(tugasB, "ms");
+
+      return atas(a.nama).localeCompare(atas(b.nama), "ms");
     });
+}
+
+function nomborSusunanJawatankuasaPentadbir(item) {
+  const nilai = Number(item?.susunan);
+  return Number.isFinite(nilai) && nilai > 0 ? nilai : 999999;
+}
+
+async function ubahSusunanJawatankuasaPentadbir(id, arah) {
+  const rekod = dataJawatankuasaOperasiPentadbir.find(
+    item => teks(item.id) === teks(id)
+  );
+
+  if (!rekod) {
+    alert("Rekod jawatankuasa tidak dijumpai.");
+    return;
+  }
+
+  const kumpulan = atas(rekod.jawatankuasa) || "LAIN-LAIN";
+  const senaraiKumpulan = dataJawatankuasaPentadbir().filter(
+    item => (atas(item.jawatankuasa) || "LAIN-LAIN") === kumpulan
+  );
+  const indeks = senaraiKumpulan.findIndex(
+    item => teks(item.id) === teks(id)
+  );
+
+  const indeksSasaran = arah === "NAIK" ? indeks - 1 : indeks + 1;
+  if (indeks < 0 || indeksSasaran < 0 || indeksSasaran >= senaraiKumpulan.length) {
+    return;
+  }
+
+  const sasaran = senaraiKumpulan[indeksSasaran];
+  const susunanRekod = nomborSusunanJawatankuasaPentadbir(rekod);
+  const susunanSasaran = nomborSusunanJawatankuasaPentadbir(sasaran);
+
+  /* Jika data lama belum ada nombor susunan, normalisasikan kumpulan dahulu. */
+  if (susunanRekod >= 999999 || susunanSasaran >= 999999) {
+    try {
+      const kemasKini = senaraiKumpulan.map((item, index) => ({
+        id: item.id,
+        susunan: index + 1
+      }));
+
+      for (const item of kemasKini) {
+        const { error } = await denganHadMasa(
+          db.from("jawatankuasa_operasi")
+            .update({ susunan: item.susunan })
+            .eq("id", item.id)
+        );
+        if (error) throw error;
+      }
+
+      await muatJawatankuasaOperasiPentadbir(rekod.tarikh, false);
+      return ubahSusunanJawatankuasaPentadbir(id, arah);
+    } catch (error) {
+      console.error("Normalisasi susunan jawatankuasa gagal:", error);
+      paparMesej(
+        "statusJawatankuasaPentadbir",
+        `Gagal menyediakan susunan: ${escapeHtml(error.message || "Ralat tidak diketahui.")}`,
+        "error"
+      );
+      return;
+    }
+  }
+
+  try {
+    /* Tukar kedudukan dua rekod dan simpan terus ke Supabase. */
+    const kemasKini = [
+      { id: rekod.id, susunan: susunanSasaran },
+      { id: sasaran.id, susunan: susunanRekod }
+    ];
+
+    for (const item of kemasKini) {
+      const { error } = await denganHadMasa(
+        db.from("jawatankuasa_operasi")
+          .update({ susunan: item.susunan })
+          .eq("id", item.id)
+      );
+      if (error) throw error;
+    }
+
+    await muatJawatankuasaOperasiPentadbir(rekod.tarikh, false);
+    paparMesej(
+      "statusJawatankuasaPentadbir",
+      "Susunan jawatankuasa berjaya dikemas kini.",
+      "success"
+    );
+  } catch (error) {
+    console.error("Ubah susunan jawatankuasa gagal:", error);
+    paparMesej(
+      "statusJawatankuasaPentadbir",
+      `Gagal mengubah susunan: ${escapeHtml(error.message || "Ralat tidak diketahui.")}. Pastikan kolum susunan telah ditambah dalam jadual jawatankuasa_operasi.`,
+      "error"
+    );
+  }
 }
 
 
@@ -13291,6 +13382,7 @@ async function muatJawatankuasaOperasiPentadbir(
           .select("*")
           .eq("tarikh", tarikhDipilih)
           .order("jawatankuasa", { ascending: true })
+          .order("susunan", { ascending: true, nullsFirst: false })
           .order("tugas", { ascending: true })
           .order("nama", { ascending: true })
       );
@@ -13704,12 +13796,31 @@ async function simpanJawatankuasaPentadbir() {
     return;
   }
 
+  const rekodAsal = id
+    ? dataJawatankuasaOperasiPentadbir.find(item => teks(item.id) === id)
+    : null;
+
+  const kumpulanBerubah =
+    rekodAsal && atas(rekodAsal.jawatankuasa) !== jawatankuasa;
+
+  const susunanSediaAda = Number(rekodAsal?.susunan);
+  const susunanMaksimumKumpulan = dataJawatankuasaOperasiPentadbir
+    .filter(item => atas(item.jawatankuasa) === jawatankuasa && teks(item.id) !== id)
+    .reduce((maksimum, item) => {
+      const nilai = Number(item.susunan);
+      return Number.isFinite(nilai) && nilai > maksimum ? nilai : maksimum;
+    }, 0);
+
   const payload = {
     tarikh,
     petugas_id: petugas.id,
     jawatankuasa,
     unit,
     tugas,
+    susunan:
+      !kumpulanBerubah && Number.isFinite(susunanSediaAda) && susunanSediaAda > 0
+        ? susunanSediaAda
+        : susunanMaksimumKumpulan + 1,
     pangkat: atas(petugas.pangkat),
     no_badan: atas(petugas.no_badan),
     nama: atas(petugas.nama),
@@ -13956,6 +14067,24 @@ if (!senarai.length) {
               onclick="bukaEditJawatankuasaPentadbir('${escapeHtml(item.id)}')"
             >
               EDIT
+            </button>
+
+            <button
+              class="admin-committee-edit-button"
+              type="button"
+              title="Naikkan satu kedudukan"
+              onclick="ubahSusunanJawatankuasaPentadbir('${escapeHtml(item.id)}', 'NAIK')"
+            >
+              ↑ NAIK
+            </button>
+
+            <button
+              class="admin-committee-edit-button"
+              type="button"
+              title="Turunkan satu kedudukan"
+              onclick="ubahSusunanJawatankuasaPentadbir('${escapeHtml(item.id)}', 'TURUN')"
+            >
+              ↓ TURUN
             </button>
 
             <button
@@ -15595,6 +15724,7 @@ function muatTurunCsvPassKenderaanPentadbir() {
 
 window.login = login;
 window.logout = logout;
+window.ubahSusunanJawatankuasaPentadbir = ubahSusunanJawatankuasaPentadbir;
 
 document.addEventListener("DOMContentLoaded", () => {
   sediakanJanaPenugasanAuto();
