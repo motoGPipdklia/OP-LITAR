@@ -1,6 +1,6 @@
 "use strict";
 
-/* SKPO OP LITAR BUILD: 20261029-JAWATANKUASA-SUSUNAN-001 */
+/* SKPO FORMULA 1 BUILD: 20260928-RANK-PB-HOLDER-FIX-017 */
 
 /* ================================================================
    SKPO FORMULA 1 — PENTADBIR
@@ -530,7 +530,7 @@ let kanvasMarkerSeretPentadbir = null;
 
 
 const KUNCI_TETAPAN_PETA_CARTA_F1 = "skpoF1TetapanPetaCarta";
-const URL_PETA_ADMIN_F1 = "images/petaadmin.png?v=20261029-001";
+const URL_PETA_ADMIN_F1 = `images/petaadmin.png?v=${Date.now()}`;
 const KUNCI_KRONOLOGI_CARTA_F1 = "skpoF1KronologiCarta";
 
 
@@ -825,23 +825,28 @@ async function panggilEdgeFunction(namaFungsi, body, masaTamat = 25000) {
   return data || {};
 }
 
-async function dapatkanProfil(userId, noBadan = "") {
-  let hasil = await denganHadMasa(db.from("profiles").select("*").eq("id", userId).maybeSingle());
-  if (!hasil.error && hasil.data) return hasil.data;
+async function dapatkanProfil(userId) {
+  let hasil = await denganHadMasa(
+    db.from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .maybeSingle()
+  );
 
-  const hasilAuth = await denganHadMasa(db.from("profiles").select("*").eq("auth_user_id", userId).maybeSingle());
-  if (!hasilAuth.error && hasilAuth.data) return hasilAuth.data;
-
-  const noBadanBersih = atas(noBadan);
-  if (noBadanBersih) {
-    const hasilNoBadan = await denganHadMasa(db.from("profiles").select("*").ilike("no_badan", noBadanBersih).maybeSingle());
-    if (!hasilNoBadan.error && hasilNoBadan.data) return hasilNoBadan.data;
-    if (hasilNoBadan.error) throw hasilNoBadan.error;
+  if (
+    hasil.error &&
+    /auth_user_id|column.*id|does not exist/i.test(hasil.error.message || "")
+  ) {
+    hasil = await denganHadMasa(
+      db.from("profiles")
+        .select("*")
+        .eq("auth_user_id", userId)
+        .maybeSingle()
+    );
   }
 
-  if (hasilAuth.error) throw hasilAuth.error;
   if (hasil.error) throw hasil.error;
-  return null;
+  return hasil.data;
 }
 
 function semakPerananPentadbir(profil) {
@@ -1312,7 +1317,7 @@ async function login() {
       );
     }
 
-    const profil = await dapatkanProfil(data.user.id, noBadan);
+    const profil = await dapatkanProfil(data.user.id);
 
     if (!profil) {
       throw new Error(
@@ -1350,11 +1355,8 @@ if (!semakPerananPentadbir(profil)) {
 
     localStorage.setItem(KUNCI_ADMIN_F1, JSON.stringify(adminLogin));
 
-    el("loginPage")?.classList.add("hidden");
-    if(el("loginPage")) el("loginPage").style.display="none";
-    el("dashboard")?.classList.remove("hidden");
-    el("dashboard")?.classList.add("admin-authenticated");
-    if(el("dashboard")) el("dashboard").style.display="block";
+    el("loginPage").style.display = "none";
+    el("dashboard").style.display = "block";
     el("adminName").textContent = [
       adminLogin.pangkat,
       adminLogin.nama,
@@ -1420,11 +1422,8 @@ if (!semakPerananPentadbir(profil)) {
       peranan: atas(profil.peranan)
     };
 
-    el("loginPage")?.classList.add("hidden");
-    if(el("loginPage")) el("loginPage").style.display="none";
-    el("dashboard")?.classList.remove("hidden");
-    el("dashboard")?.classList.add("admin-authenticated");
-    if(el("dashboard")) el("dashboard").style.display="block";
+    el("loginPage").style.display = "none";
+    el("dashboard").style.display = "block";
     el("adminName").textContent = [
       adminLogin.pangkat,
       adminLogin.nama,
@@ -1440,57 +1439,18 @@ if (!semakPerananPentadbir(profil)) {
 }
 
 async function logout() {
-  /* FIX 007 — LOG KELUAR PENTADBIR
-     Tutup dashboard serta-merta dan pulangkan paparan ke login.
-     class admin-authenticated WAJIB dibuang supaya CSS tidak terus
-     memaksa dashboard dipaparkan selepas logout.
-  */
-  const dashboard = el("dashboard");
-  const loginPage = el("loginPage");
-
+  await db?.auth?.signOut().catch(() => {});
+  localStorage.removeItem(KUNCI_ADMIN_F1);
   adminLogin = null;
   dataDashboard = [];
   dataPaparan = [];
-  localStorage.removeItem(KUNCI_ADMIN_F1);
 
-  if (dashboard) {
-    dashboard.classList.remove("admin-authenticated");
-    dashboard.classList.add("hidden");
-    dashboard.style.display = "none";
-  }
-
-  if (loginPage) {
-    loginPage.classList.remove("hidden");
-    loginPage.style.display = "flex";
-  }
-
-  if (el("noBadan")) el("noBadan").value = "";
-  if (el("password")) el("password").value = "";
-  if (el("loginStatus")) {
-    el("loginStatus").innerHTML = "";
-    el("loginStatus").className = "";
-  }
-
-  /* Tamatkan sesi Supabase selepas UI dikunci. */
-  try {
-    if (db?.auth?.signOut) {
-      await denganHadMasa(db.auth.signOut(), 8000);
-    }
-  } catch (error) {
-    console.warn("Log keluar Supabase:", error);
-  } finally {
-    /* Pastikan keadaan akhir sentiasa LOGIN walaupun signOut gagal/rangkaian perlahan. */
-    if (dashboard) {
-      dashboard.classList.remove("admin-authenticated");
-      dashboard.classList.add("hidden");
-      dashboard.style.display = "none";
-    }
-    if (loginPage) {
-      loginPage.classList.remove("hidden");
-      loginPage.style.display = "flex";
-    }
-    el("noBadan")?.focus();
-  }
+  el("dashboard").style.display = "none";
+  el("loginPage").style.display = "flex";
+  el("noBadan").value = "";
+  el("password").value = "";
+  el("loginStatus").innerHTML = "";
+  el("noBadan").focus();
 }
 
 /* ================================================================
@@ -2104,7 +2064,7 @@ function binaRekodImportPenggunaCsv(barisCsv) {
     throw new Error(`Kolum wajib tidak dijumpai: ${tiada.join(", ")}. Gunakan templat pengguna yang disediakan.`);
   }
 
-  const perananSah = ["PETUGAS", "PENYELIA", "URUSETIA", "PENTADBIR", "TSM", "SUBTEK", "PUSAT_KAWALAN"];
+  const perananSah = ["PETUGAS", "PENYELIA", "URUSETIA", "PENTADBIR", "TSM", "PUSAT_KAWALAN"];
   const ambil = (baris, nama) => indeks[nama] >= 0 ? teks(baris[indeks[nama]]) : "";
 
   const rekod = barisCsv.slice(1).map((baris, kedudukan) => {
@@ -9052,35 +9012,42 @@ function paparCartaPengunjungLokasiPentadbir() {
   const labels =
     ringkasan.map(item => item.lokasi);
 
-  /*
-    Paparan lokasi hanya menunjukkan pengunjung DATANG.
-    Rekod keluar masih disimpan dan digunakan pada bahagian lain,
-    tetapi tidak dipaparkan dalam carta ini.
-  */
-  const nilai =
+  const nilaiDatang =
     ringkasan.map(item => item.datang);
 
-  const jumlahKeseluruhan =
+  const nilaiKeluar =
+    ringkasan.map(item => item.keluar);
+
+  const jumlahDatang =
     ringkasan.reduce(
       (jumlah, item) => jumlah + item.datang,
       0
     );
 
+  const jumlahKeluar =
+    ringkasan.reduce(
+      (jumlah, item) => jumlah + item.keluar,
+      0
+    );
+
+  const bakiKeseluruhan =
+    jumlahDatang - jumlahKeluar;
+
+  /*
+    Kekalkan kotak JUMLAH KESELURUHAN sedia ada sebagai baki semasa.
+    Carta di bawah pula membezakan DATANG dan KELUAR.
+  */
   const jumlahBox =
     el("jumlahKeseluruhanPengunjungLokasiPentadbir");
 
   if (jumlahBox) {
-    /*
-      Paparan JUMLAH KESELURUHAN dibuang sepenuhnya
-      daripada panel PENGUNJUNG MENGIKUT LOKASI.
-    */
-    const kotakJumlah =
-      jumlahBox.closest(".admin-chart-location-total") ||
-      jumlahBox.parentElement;
+    jumlahBox.textContent =
+      bakiKeseluruhan.toLocaleString("ms-MY");
 
-    if (kotakJumlah) {
-      kotakJumlah.style.display = "none";
-    }
+    jumlahBox.title =
+      `Datang: ${jumlahDatang.toLocaleString("ms-MY")} | ` +
+      `Keluar: ${jumlahKeluar.toLocaleString("ms-MY")} | ` +
+      `Baki: ${bakiKeseluruhan.toLocaleString("ms-MY")}`;
   }
 
   kemusnahkanCartaPentadbir(
@@ -9098,8 +9065,15 @@ function paparCartaPengunjungLokasiPentadbir() {
 
           datasets: [
             {
-              label: "JUMLAH PENGUNJUNG",
-              data: nilai,
+              label: "PENGUNJUNG DATANG",
+              data: nilaiDatang,
+              borderWidth: 2,
+              borderRadius: 6,
+              borderSkipped: false
+            },
+            {
+              label: "PENGUNJUNG KELUAR",
+              data: nilaiKeluar,
               borderWidth: 2,
               borderRadius: 6,
               borderSkipped: false
@@ -9205,20 +9179,33 @@ function paparCartaPengunjungLokasiPentadbir() {
 
               callbacks: {
                 label(context) {
-                  return (
-                    `JUMLAH PENGUNJUNG: ${Number(context.raw || 0).toLocaleString("ms-MY")}`
-                  );
-                },
-
-                afterLabel(context) {
                   const rekod =
                     ringkasan[
                       context.dataIndex
                     ];
 
+                  const nilai =
+                    Number(context.raw || 0)
+                      .toLocaleString("ms-MY");
+
                   return (
-                    `${rekod?.bilLaporan || 0} rekod/laporan`
+                    `${context.dataset.label}: ${nilai}`
                   );
+                },
+
+                afterBody(context) {
+                  const indeks =
+                    context?.[0]?.dataIndex;
+
+                  const rekod =
+                    ringkasan[indeks];
+
+                  if (!rekod) return [];
+
+                  return [
+                    `BAKI DI LOKASI: ${rekod.baki.toLocaleString("ms-MY")}`,
+                    `${rekod.bilLaporan || 0} REKOD/LAPORAN`
+                  ];
                 },
 
                 footer() {
@@ -9920,60 +9907,72 @@ function lokasiLaporanKenderaanPentadbir(item) {
 
 
 function ringkasanKenderaanMengikutLokasiPentadbir() {
-  const kumpulan = new Map();
+  const kumpulan =
+    new Map();
 
   senaraiKenderaanCartaPentadbir()
     .forEach(item => {
       const lokasi =
-        lokasiLaporanKenderaanPentadbir(item);
-
-      const bas =
-        nilaiKenderaanDaripadaLaporanPentadbir(item, "BAS");
-
-      const motokar =
-        nilaiKenderaanDaripadaLaporanPentadbir(item, "MOTOKAR");
-
-      const motosikal =
-        nilaiKenderaanDaripadaLaporanPentadbir(item, "MOTOSIKAL");
+        lokasiLaporanKenderaanPentadbir(
+          item
+        );
 
       const jumlah =
-        jumlahKeseluruhanKenderaanLaporanPentadbir(item);
+        jumlahKeseluruhanKenderaanLaporanPentadbir(
+          item
+        );
+
+      const bas =
+        nilaiKenderaanDaripadaLaporanPentadbir(
+          item,
+          "BAS"
+        );
+
+      const motosikal =
+        nilaiKenderaanDaripadaLaporanPentadbir(
+          item,
+          "MOTOSIKAL"
+        );
+
+      const motokar =
+        nilaiKenderaanDaripadaLaporanPentadbir(
+          item,
+          "MOTOKAR"
+        );
 
       const sediaAda =
         kumpulan.get(lokasi) || {
           lokasi,
-          bas: 0,
-          motokar: 0,
-          motosikal: 0,
           jumlah: 0,
+          bas: 0,
+          motosikal: 0,
+          motokar: 0,
           bilLaporan: 0
         };
 
-      /*
-        Hanya rekod KENDERAAN DATANG (+) dipaparkan.
-        Pecahan BAS, MOTOKAR dan MOTOSIKAL dikekalkan.
-        Rekod keluar (-) masih kekal dalam data tetapi
-        tidak dimasukkan ke carta KENDERAAN MENGIKUT LOKASI.
-      */
-      if (jumlah >= 0) {
-        sediaAda.bas += Math.max(0, bas);
-        sediaAda.motokar += Math.max(0, motokar);
-        sediaAda.motosikal += Math.max(0, motosikal);
-        sediaAda.jumlah += Math.max(0, bas) +
-                           Math.max(0, motokar) +
-                           Math.max(0, motosikal);
-      }
-
+      sediaAda.jumlah += jumlah;
+      sediaAda.bas += bas;
+      sediaAda.motosikal += motosikal;
+      sediaAda.motokar += motokar;
       sediaAda.bilLaporan += 1;
-      kumpulan.set(lokasi, sediaAda);
+
+      kumpulan.set(
+        lokasi,
+        sediaAda
+      );
     });
 
   return Array
-    .from(kumpulan.values())
+    .from(
+      kumpulan.values()
+    )
     .sort(
       (a, b) =>
         b.jumlah - a.jumlah ||
-        a.lokasi.localeCompare(b.lokasi, "ms")
+        a.lokasi.localeCompare(
+          b.lokasi,
+          "ms"
+        )
     );
 }
 
@@ -10321,29 +10320,43 @@ function paparCartaKenderaanLokasiPentadbir() {
     ringkasanKenderaanMengikutLokasiPentadbir();
 
   const labels =
-    ringkasan.map(item => item.lokasi);
+    ringkasan.map(
+      item => item.lokasi
+    );
 
   const dataBas =
-    ringkasan.map(item => item.bas);
+    ringkasan.map(
+      item => item.bas
+    );
 
   const dataMotokar =
-    ringkasan.map(item => item.motokar);
+    ringkasan.map(
+      item => item.motokar
+    );
 
   const dataMotosikal =
-    ringkasan.map(item => item.motosikal);
+    ringkasan.map(
+      item => item.motosikal
+    );
 
-  // Buang paparan JUMLAH KESELURUHAN seperti carta pengunjung.
-  const jumlahBox =
-    el("jumlahKeseluruhanKenderaanLokasiPentadbir");
+  const jumlahKeseluruhan =
+    ringkasan.reduce(
+      (jumlah, item) =>
+        jumlah + item.jumlah,
+      0
+    );
 
-  if (jumlahBox) {
-    const kotakJumlah =
-      jumlahBox.closest(".admin-chart-location-total") ||
-      jumlahBox.parentElement;
-
-    if (kotakJumlah) {
-      kotakJumlah.style.display = "none";
-    }
+  if (
+    el(
+      "jumlahKeseluruhanKenderaanLokasiPentadbir"
+    )
+  ) {
+    el(
+      "jumlahKeseluruhanKenderaanLokasiPentadbir"
+    ).textContent =
+      jumlahKeseluruhan.toLocaleString(
+        "ms-MY"
+      );
   }
 
   kemusnahkanCartaPentadbir(
@@ -10361,21 +10374,21 @@ function paparCartaKenderaanLokasiPentadbir() {
 
           datasets: [
             {
-              label: "BAS",
+              label: "Bas",
               data: dataBas,
               borderWidth: 2,
               borderRadius: 5,
               borderSkipped: false
             },
             {
-              label: "MOTOKAR",
+              label: "Motokar",
               data: dataMotokar,
               borderWidth: 2,
               borderRadius: 5,
               borderSkipped: false
             },
             {
-              label: "MOTOSIKAL",
+              label: "Motosikal",
               data: dataMotosikal,
               borderWidth: 2,
               borderRadius: 5,
@@ -10385,9 +10398,12 @@ function paparCartaKenderaanLokasiPentadbir() {
         },
 
         options: {
-          ...pilihanCartaPentadbir("Jumlah Kenderaan"),
+          ...pilihanCartaPentadbir(
+            "Jumlah Kenderaan"
+          ),
 
           indexAxis: "y",
+
           maintainAspectRatio: false,
 
           interaction: {
@@ -10398,31 +10414,40 @@ function paparCartaKenderaanLokasiPentadbir() {
           scales: {
             x: {
               beginAtZero: true,
+
               stacked: true,
+
               ticks: {
                 color: "#d8d8d8",
                 precision: 0
               },
+
               grid: {
-                color: "rgba(255,255,255,.08)"
+                color:
+                  "rgba(255,255,255,.08)"
               },
+
               title: {
                 display: true,
-                text: "Jumlah Kenderaan",
+                text:
+                  "Jumlah Kenderaan",
                 color: "#d8d8d8"
               }
             },
 
             y: {
               stacked: true,
+
               ticks: {
                 color: "#ffffff",
                 font: {
                   weight: "700"
                 }
               },
+
               grid: {
-                color: "rgba(255,255,255,.05)"
+                color:
+                  "rgba(255,255,255,.05)"
               }
             }
           },
@@ -10433,14 +10458,18 @@ function paparCartaKenderaanLokasiPentadbir() {
                 ?.getElementsAtEventForMode(
                   event,
                   "nearest",
-                  { intersect: true },
+                  {
+                    intersect: true
+                  },
                   true
                 ) || [];
 
             if (!elemen.length) return;
 
             const rekod =
-              ringkasan[elemen[0].index];
+              ringkasan[
+                elemen[0].index
+              ];
 
             if (!rekod) return;
 
@@ -10455,12 +10484,16 @@ function paparCartaKenderaanLokasiPentadbir() {
 
             if (sasaran) {
               sasaran.style.cursor =
-                elements?.length ? "pointer" : "default";
+                elements?.length
+                  ? "pointer"
+                  : "default";
             }
           },
 
           plugins: {
-            ...pilihanCartaPentadbir("Jumlah Kenderaan").plugins,
+            ...pilihanCartaPentadbir(
+              "Jumlah Kenderaan"
+            ).plugins,
 
             legend: {
               display: true,
@@ -13213,130 +13246,39 @@ if (!senarai.length) {
 function dataJawatankuasaPentadbir() {
   return [...dataJawatankuasaOperasiPentadbir]
     .sort((a, b) => {
-      const kumpulanA = atas(a.jawatankuasa);
-      const kumpulanB = atas(b.jawatankuasa);
+      const kumpulanA =
+        atas(a.jawatankuasa);
 
-      if (kumpulanA !== kumpulanB) {
-        return kumpulanA.localeCompare(kumpulanB, "ms");
-      }
+      const kumpulanB =
+        atas(b.jawatankuasa);
 
-      /*
-        FIX SUSUNAN JAWATANKUASA:
-        Nombor BIL kini mengikut kolum susunan di Supabase,
-        bukan lagi mengikut abjad TUGAS / NAMA.
-      */
-      const susunanA = Number(a.susunan);
-      const susunanB = Number(b.susunan);
-      const adaSusunanA = Number.isFinite(susunanA) && susunanA > 0;
-      const adaSusunanB = Number.isFinite(susunanB) && susunanB > 0;
-
-      if (adaSusunanA && adaSusunanB && susunanA !== susunanB) {
-        return susunanA - susunanB;
-      }
-      if (adaSusunanA !== adaSusunanB) {
-        return adaSusunanA ? -1 : 1;
-      }
-
-      const tugasA = atas(a.tugas);
-      const tugasB = atas(b.tugas);
-      if (tugasA !== tugasB) return tugasA.localeCompare(tugasB, "ms");
-
-      return atas(a.nama).localeCompare(atas(b.nama), "ms");
-    });
-}
-
-function nomborSusunanJawatankuasaPentadbir(item) {
-  const nilai = Number(item?.susunan);
-  return Number.isFinite(nilai) && nilai > 0 ? nilai : 999999;
-}
-
-async function ubahSusunanJawatankuasaPentadbir(id, arah) {
-  const rekod = dataJawatankuasaOperasiPentadbir.find(
-    item => teks(item.id) === teks(id)
-  );
-
-  if (!rekod) {
-    alert("Rekod jawatankuasa tidak dijumpai.");
-    return;
-  }
-
-  const kumpulan = atas(rekod.jawatankuasa) || "LAIN-LAIN";
-  const senaraiKumpulan = dataJawatankuasaPentadbir().filter(
-    item => (atas(item.jawatankuasa) || "LAIN-LAIN") === kumpulan
-  );
-  const indeks = senaraiKumpulan.findIndex(
-    item => teks(item.id) === teks(id)
-  );
-
-  const indeksSasaran = arah === "NAIK" ? indeks - 1 : indeks + 1;
-  if (indeks < 0 || indeksSasaran < 0 || indeksSasaran >= senaraiKumpulan.length) {
-    return;
-  }
-
-  const sasaran = senaraiKumpulan[indeksSasaran];
-  const susunanRekod = nomborSusunanJawatankuasaPentadbir(rekod);
-  const susunanSasaran = nomborSusunanJawatankuasaPentadbir(sasaran);
-
-  /* Jika data lama belum ada nombor susunan, normalisasikan kumpulan dahulu. */
-  if (susunanRekod >= 999999 || susunanSasaran >= 999999) {
-    try {
-      const kemasKini = senaraiKumpulan.map((item, index) => ({
-        id: item.id,
-        susunan: index + 1
-      }));
-
-      for (const item of kemasKini) {
-        const { error } = await denganHadMasa(
-          db.from("jawatankuasa_operasi")
-            .update({ susunan: item.susunan })
-            .eq("id", item.id)
+      if (
+        kumpulanA !== kumpulanB
+      ) {
+        return kumpulanA.localeCompare(
+          kumpulanB,
+          "ms"
         );
-        if (error) throw error;
       }
 
-      await muatJawatankuasaOperasiPentadbir(rekod.tarikh, false);
-      return ubahSusunanJawatankuasaPentadbir(id, arah);
-    } catch (error) {
-      console.error("Normalisasi susunan jawatankuasa gagal:", error);
-      paparMesej(
-        "statusJawatankuasaPentadbir",
-        `Gagal menyediakan susunan: ${escapeHtml(error.message || "Ralat tidak diketahui.")}`,
-        "error"
+      const tugasA =
+        atas(a.tugas);
+
+      const tugasB =
+        atas(b.tugas);
+
+      if (tugasA !== tugasB) {
+        return tugasA.localeCompare(
+          tugasB,
+          "ms"
+        );
+      }
+
+      return atas(a.nama).localeCompare(
+        atas(b.nama),
+        "ms"
       );
-      return;
-    }
-  }
-
-  try {
-    /* Tukar kedudukan dua rekod dan simpan terus ke Supabase. */
-    const kemasKini = [
-      { id: rekod.id, susunan: susunanSasaran },
-      { id: sasaran.id, susunan: susunanRekod }
-    ];
-
-    for (const item of kemasKini) {
-      const { error } = await denganHadMasa(
-        db.from("jawatankuasa_operasi")
-          .update({ susunan: item.susunan })
-          .eq("id", item.id)
-      );
-      if (error) throw error;
-    }
-
-    await muatJawatankuasaOperasiPentadbir(rekod.tarikh, false);
-    paparMesej(
-      "statusJawatankuasaPentadbir",
-      "Susunan jawatankuasa berjaya dikemas kini.",
-      "success"
-    );
-  } catch (error) {
-    console.error("Ubah susunan jawatankuasa gagal:", error);
-    paparMesej(
-      "statusJawatankuasaPentadbir",
-      `Gagal mengubah susunan: ${escapeHtml(error.message || "Ralat tidak diketahui.")}. Pastikan kolum susunan telah ditambah dalam jadual jawatankuasa_operasi.`,
-      "error"
-    );
-  }
+    });
 }
 
 
@@ -13382,7 +13324,6 @@ async function muatJawatankuasaOperasiPentadbir(
           .select("*")
           .eq("tarikh", tarikhDipilih)
           .order("jawatankuasa", { ascending: true })
-          .order("susunan", { ascending: true, nullsFirst: false })
           .order("tugas", { ascending: true })
           .order("nama", { ascending: true })
       );
@@ -13796,31 +13737,12 @@ async function simpanJawatankuasaPentadbir() {
     return;
   }
 
-  const rekodAsal = id
-    ? dataJawatankuasaOperasiPentadbir.find(item => teks(item.id) === id)
-    : null;
-
-  const kumpulanBerubah =
-    rekodAsal && atas(rekodAsal.jawatankuasa) !== jawatankuasa;
-
-  const susunanSediaAda = Number(rekodAsal?.susunan);
-  const susunanMaksimumKumpulan = dataJawatankuasaOperasiPentadbir
-    .filter(item => atas(item.jawatankuasa) === jawatankuasa && teks(item.id) !== id)
-    .reduce((maksimum, item) => {
-      const nilai = Number(item.susunan);
-      return Number.isFinite(nilai) && nilai > maksimum ? nilai : maksimum;
-    }, 0);
-
   const payload = {
     tarikh,
     petugas_id: petugas.id,
     jawatankuasa,
     unit,
     tugas,
-    susunan:
-      !kumpulanBerubah && Number.isFinite(susunanSediaAda) && susunanSediaAda > 0
-        ? susunanSediaAda
-        : susunanMaksimumKumpulan + 1,
     pangkat: atas(petugas.pangkat),
     no_badan: atas(petugas.no_badan),
     nama: atas(petugas.nama),
@@ -14067,24 +13989,6 @@ if (!senarai.length) {
               onclick="bukaEditJawatankuasaPentadbir('${escapeHtml(item.id)}')"
             >
               EDIT
-            </button>
-
-            <button
-              class="admin-committee-edit-button"
-              type="button"
-              title="Naikkan satu kedudukan"
-              onclick="ubahSusunanJawatankuasaPentadbir('${escapeHtml(item.id)}', 'NAIK')"
-            >
-              ↑ NAIK
-            </button>
-
-            <button
-              class="admin-committee-edit-button"
-              type="button"
-              title="Turunkan satu kedudukan"
-              onclick="ubahSusunanJawatankuasaPentadbir('${escapeHtml(item.id)}', 'TURUN')"
-            >
-              ↓ TURUN
             </button>
 
             <button
@@ -14414,193 +14318,139 @@ function salinanStatikLaporanHarianUntukEksport() {
 }
 
 function cetakLaporanKeseluruhanHarian() {
+  const asal = el("kandunganLaporanKeseluruhanHarian");
   const clone = salinanStatikLaporanHarianUntukEksport();
-  if (!clone) return alert("Sila jana laporan terlebih dahulu.");
+  if (!clone || !asal) return alert("Sila jana laporan terlebih dahulu.");
 
   const tarikh = el("tarikhLaporanKeseluruhanHarian")?.value || hariIniMalaysia();
   const cssLinks = [...document.querySelectorAll('link[rel="stylesheet"]')]
     .map(link => `<link rel="stylesheet" href="${escapeHtml(new URL(link.getAttribute("href"), document.baseURI).href)}">`)
     .join("\n");
 
-  /* FIX 007 — susunan khas CETAK sahaja.
-     1) Peta: JENIS TUGAS + gambar peta dalam SATU halaman.
-     2) Pengunjung: Trend satu halaman, Pecahan Lokasi satu halaman.
-     3) Kenderaan: Trend satu halaman, Pecahan Lokasi satu halaman.
-     MUAT TURUN PDF tidak disentuh. */
-  function pecahKadDuaHalaman(selectorKad, selectorBlok, kelasTambahan) {
-    const kad = clone.querySelector(selectorKad);
-    if (!kad) return;
-    const blok = [...kad.querySelectorAll(selectorBlok)];
-    if (blok.length < 2) return;
-
-    const halamanTrend = kad.cloneNode(true);
-    const halamanLokasi = kad.cloneNode(true);
-
-    [...halamanTrend.querySelectorAll(selectorBlok)].forEach((n, i) => {
-      if (i !== 0) n.remove();
-    });
-    [...halamanLokasi.querySelectorAll(selectorBlok)].forEach((n, i) => {
-      if (i !== 1) n.remove();
-    });
-
-    halamanTrend.classList.add("print-split-page", `${kelasTambahan}-trend-page`);
-    halamanLokasi.classList.add("print-split-page", `${kelasTambahan}-location-page`);
-
-    /* Pada halaman kedua, kekalkan tajuk kad tetapi ubah keterangan supaya jelas. */
-    const pTrend = halamanTrend.querySelector(".admin-chart-card-heading .muted");
-    const pLokasi = halamanLokasi.querySelector(".admin-chart-card-heading .muted");
-    if (pTrend) pTrend.textContent = "TREND OPERASI — JUMLAH TERKUMPUL MENGIKUT MASA";
-    if (pLokasi) pLokasi.textContent = "PECAHAN LOKASI";
-
-    kad.replaceWith(halamanTrend, halamanLokasi);
-  }
-
-  pecahKadDuaHalaman(
-    ".admin-visitor-chart-card",
-    ".admin-visitor-chart-block",
-    "visitor"
-  );
-  pecahKadDuaHalaman(
-    ".admin-vehicle-chart-card",
-    ".admin-vehicle-chart-block",
-    "vehicle"
-  );
-
+  const lebarAsal = Math.max(900, Math.round(asal.getBoundingClientRect().width));
   const bgBody = getComputedStyle(document.body).backgroundColor || "#111";
   const w = window.open("", "_blank", "width=1500,height=950");
   if (!w) return alert("Pelayar menghalang tetingkap cetak. Benarkan pop-up dan cuba semula.");
 
   w.document.open();
-  w.document.write(`<!DOCTYPE html><html lang="ms"><head>
-    <meta charset="UTF-8">
-    <title>Laporan Keseluruhan Harian ${escapeHtml(formatTarikhMalaysia(tarikh))}</title>
-    ${cssLinks}
-    <style>
-      @page{size:A4 landscape;margin:7mm}
-      html,body{
-        margin:0!important;padding:0!important;background:${escapeHtml(bgBody)}!important;
-        -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important
-      }
-      #kandunganCetak{width:100%!important;max-width:none!important;margin:0!important}
-      #kandunganCetak *{box-sizing:border-box!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-      #kandunganCetak img{max-width:100%!important;height:auto!important;object-fit:contain!important}
-
-      /* Tajuk halaman pertama putih. */
-      #kandunganCetak .laporan-harian-kepala h2,
-      #kandunganCetak .laporan-harian-kepala h3{color:#fff!important}
-
-      /* Semua kad utama tidak boleh terpotong di tengah. */
-      #kandunganCetak .admin-chart-card,
-      #kandunganCetak .print-split-page{
-        break-inside:avoid-page!important;
-        page-break-inside:avoid!important;
-      }
-
-      /* PETA: filter Jenis Tugas + peta mesti muat bersama dalam satu halaman. */
-      #kandunganCetak .admin-operation-map-card{
-        height:190mm!important;
-        max-height:190mm!important;
-        overflow:hidden!important;
-      }
-      #kandunganCetak .admin-operation-map-card .section-heading{margin-bottom:3mm!important}
-      #kandunganCetak .admin-operation-map-card .admin-map-task-filter{
-        margin:0 0 3mm 0!important;
-        min-height:13mm!important;
-      }
-      #kandunganCetak .admin-operation-map-card .admin-operation-map-layout,
-      #kandunganCetak .admin-operation-map-card .admin-operation-map-stage{
-        display:block!important;width:100%!important;max-width:none!important;
-        height:145mm!important;max-height:145mm!important;overflow:hidden!important;
-      }
-      #kandunganCetak .admin-operation-map-card .admin-operation-map-viewport,
-      #kandunganCetak .admin-operation-map-card .admin-operation-map-canvas{
-        width:100%!important;height:139mm!important;max-height:139mm!important;
-        overflow:hidden!important;display:flex!important;align-items:center!important;justify-content:center!important;
-        transform:none!important;
-      }
-      #kandunganCetak .admin-operation-map-card .admin-operation-map-image{
-        display:block!important;width:auto!important;height:auto!important;
-        max-width:100%!important;max-height:137mm!important;object-fit:contain!important;
-        position:static!important;transform:none!important;margin:0 auto!important;
-      }
-      #kandunganCetak .admin-operation-map-card .admin-map-marker-layer,
-      #kandunganCetak .admin-operation-map-card .admin-map-footer{display:none!important}
-
-      /* Halaman Trend/Pecahan: satu blok menggunakan seluruh ruang halaman. */
-      #kandunganCetak .print-split-page{
-        height:190mm!important;max-height:190mm!important;overflow:hidden!important;
-      }
-      #kandunganCetak .print-split-page .admin-visitor-layout,
-      #kandunganCetak .print-split-page .admin-vehicle-layout,
-      #kandunganCetak .print-split-page .admin-visitor-chart-panel,
-      #kandunganCetak .print-split-page .admin-vehicle-chart-panel{
-        display:block!important;width:100%!important;max-width:none!important;height:auto!important;
-      }
-      #kandunganCetak .print-split-page .admin-visitor-chart-block,
-      #kandunganCetak .print-split-page .admin-vehicle-chart-block{
-        width:100%!important;max-width:none!important;height:155mm!important;max-height:155mm!important;
-        overflow:hidden!important;
-      }
-      #kandunganCetak .print-split-page .admin-chart-canvas-wrap{
-        width:100%!important;height:132mm!important;max-height:132mm!important;
-        display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important;
-      }
-      #kandunganCetak .print-split-page .admin-chart-canvas-wrap img{
-        width:auto!important;height:auto!important;max-width:100%!important;max-height:130mm!important;
-        object-fit:contain!important;margin:auto!important;
-      }
-      #kandunganCetak .print-split-page .admin-visitor-location-total,
-      #kandunganCetak .print-split-page .admin-vehicle-location-total,
-      #kandunganCetak .print-split-page .admin-visitor-location-hint,
-      #kandunganCetak .print-split-page .admin-vehicle-location-hint{display:none!important}
-
-      @media print{
-        #kandunganCetak .admin-chart-card,
-        #kandunganCetak .print-split-page{
-          break-before:page!important;page-break-before:always!important;
-          break-inside:avoid-page!important;page-break-inside:avoid!important;
-          width:100%!important;
-        }
-        #kandunganCetak .admin-chart-card:first-of-type{
-          break-before:auto!important;page-break-before:auto!important;
-        }
-      }
-    </style>
-  </head><body>
-    <main id="kandunganCetak">${clone.innerHTML}</main>
-    <script>
-      window.addEventListener("load",function(){
-        const imgs=[...document.images];
-        Promise.all(imgs.map(i=>i.complete?Promise.resolve():new Promise(r=>{i.onload=r;i.onerror=r;})))
-          .then(()=>setTimeout(function(){window.focus();window.print();},900));
-      });
-    <\/script>
-  </body></html>`);
+  w.document.write(`<!DOCTYPE html><html lang="ms"><head><meta charset="UTF-8"><title>Laporan Keseluruhan Harian ${escapeHtml(formatTarikhMalaysia(tarikh))}</title>${cssLinks}<style>
+    @page{size:A4 landscape;margin:8mm}
+    html,body{margin:0!important;padding:0!important;background:${escapeHtml(bgBody)}!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    body{padding:12px!important}
+    #kandunganCetak{box-sizing:border-box!important;width:${lebarAsal}px!important;max-width:none!important;margin:0 auto!important}
+    #kandunganCetak *{box-sizing:border-box!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    #kandunganCetak img{max-width:100%!important;height:auto!important;object-fit:contain!important}
+    #kandunganCetak .admin-visitor-detail-panel,
+    #kandunganCetak .admin-vehicle-detail-panel,
+    #kandunganCetak .admin-attendance-list-panel,
+    #kandunganCetak .admin-map-location-panel,
+    #kandunganCetak .admin-vvip-detail-panel,
+    #kandunganCetak .admin-incident-detail-panel{display:none!important}
+    #kandunganCetak .admin-visitor-layout,
+    #kandunganCetak .admin-vehicle-layout,
+    #kandunganCetak .admin-attendance-layout,
+    #kandunganCetak .admin-operation-map-layout,
+    #kandunganCetak .admin-vvip-layout,
+    #kandunganCetak .admin-incident-layout{display:block!important}
+    #kandunganCetak .admin-visitor-chart-panel,
+    #kandunganCetak .admin-vehicle-chart-panel,
+    #kandunganCetak .admin-attendance-chart-panel,
+    #kandunganCetak .admin-operation-map-stage,
+    #kandunganCetak .admin-vvip-list-panel,
+    #kandunganCetak .admin-incident-chart-panel{width:100%!important;max-width:none!important}
+    @media print{
+      body{padding:0!important}
+      #kandunganCetak{margin:0!important}
+      .admin-chart-card,.admin-visitor-chart-block,.admin-vehicle-chart-block{break-inside:avoid-page;page-break-inside:avoid}
+    }
+  </style></head><body><main id="kandunganCetak">${clone.innerHTML}</main><script>
+    window.addEventListener("load",function(){setTimeout(function(){window.focus();window.print();},900)});
+  <\/script></body></html>`);
   w.document.close();
 }
 
 async function muatTurunPdfLaporanKeseluruhanHarian() {
   const asal = el("kandunganLaporanKeseluruhanHarian");
-  if (!asal || !laporanHarianSudahDijana) return alert("Sila jana laporan terlebih dahulu.");
+  if (!asal) return alert("Sila jana laporan terlebih dahulu.");
   if (!window.html2canvas || !window.jspdf?.jsPDF) return alert("Modul PDF belum dimuatkan. Pastikan internet tersedia dan muat semula halaman.");
-  const btn=el("btnPdfLaporanKeseluruhanHarian"), tarikh=el("tarikhLaporanKeseluruhanHarian")?.value||hariIniMalaysia(), statusId="statusLaporanKeseluruhanHarian";
-  let host=null;
+
+  const btn = el("btnPdfLaporanKeseluruhanHarian");
+  const tarikh = el("tarikhLaporanKeseluruhanHarian")?.value || hariIniMalaysia();
+  const statusId = "statusLaporanKeseluruhanHarian";
+
   try {
-    if(btn){btn.disabled=true;btn.textContent="SEDANG MENJANA PDF...";} paparMesej(statusId,"Sedang menjana PDF tanpa memotong carta...","warning");
-    const clone=salinanStatikLaporanHarianUntukEksport(); if(!clone) throw new Error("Paparan laporan tidak tersedia.");
-    host=document.createElement("div"); host.style.cssText=`position:fixed;left:-100000px;top:0;width:${Math.max(1000,Math.round(asal.getBoundingClientRect().width))}px;z-index:-1;background:${getComputedStyle(document.body).backgroundColor||"#0f0f0f"};padding:0;margin:0;`; host.appendChild(clone); document.body.appendChild(host);
-    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-    const cards=[...clone.querySelectorAll(".admin-chart-card")]; if(!cards.length) throw new Error("Tiada carta ditemui untuk laporan.");
-    const {jsPDF}=window.jspdf; const pdf=new jsPDF({orientation:"landscape",unit:"mm",format:"a4",compress:true}); const pageW=pdf.internal.pageSize.getWidth(),pageH=pdf.internal.pageSize.getHeight(),margin=7,usableW=pageW-margin*2,usableH=pageH-margin*2;
-    /* Ringkasan atas pada halaman pertama. */
-    const first=cards[0]; const firstTop=first.getBoundingClientRect().top-clone.getBoundingClientRect().top; if(firstTop>10){const introCanvas=await window.html2canvas(clone,{scale:1.35,useCORS:true,backgroundColor:getComputedStyle(document.body).backgroundColor||"#0f0f0f",logging:false,height:Math.ceil(firstTop)}); const sc=Math.min(usableW/introCanvas.width,usableH/introCanvas.height); pdf.addImage(introCanvas.toDataURL("image/jpeg",.96),"JPEG",margin,margin,introCanvas.width*sc,introCanvas.height*sc,undefined,"FAST");}
-    for(let i=0;i<cards.length;i++){
-      const c=await window.html2canvas(cards[i],{scale:1.35,useCORS:true,allowTaint:false,backgroundColor:getComputedStyle(document.body).backgroundColor||"#0f0f0f",logging:false});
-      pdf.addPage("a4","landscape"); const sc=Math.min(usableW/c.width,usableH/c.height),wmm=c.width*sc,hmm=c.height*sc,x=(pageW-wmm)/2,y=(pageH-hmm)/2; pdf.addImage(c.toDataURL("image/jpeg",.96),"JPEG",x,y,wmm,hmm,undefined,"FAST");
+    if (btn) { btn.disabled = true; btn.textContent = "SEDANG MENJANA PDF..."; }
+    paparMesej(statusId, "Sedang menjana PDF sama seperti paparan Laporan Keseluruhan...", "warning");
+
+    /* FIX 009 — tangkap terus paparan FIX 007 yang sedang dilihat.
+       Tiada clone / re-layout khas PDF supaya saiz, grid, warna, font,
+       carta dan jarak kekal sama seperti paparan dalam sistem. */
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    const rect = asal.getBoundingClientRect();
+    const lebar = Math.max(1, Math.round(rect.width));
+    const tinggi = Math.max(1, Math.round(asal.scrollHeight));
+    const bg = getComputedStyle(document.body).backgroundColor || "#0f0f0f";
+
+    const canvas = await window.html2canvas(asal, {
+      scale: 1.35,
+      useCORS: true,
+      backgroundColor: bg,
+      logging: false,
+      width: lebar,
+      height: tinggi,
+      windowWidth: window.innerWidth,
+      windowHeight: window.innerHeight,
+      scrollX: 0,
+      scrollY: -window.scrollY
+    });
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4", compress: true });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margin = 7;
+    const usableW = pageW - margin * 2;
+    const usableH = pageH - margin * 2;
+
+    /* Skala seluruh paparan secara SERAGAM mengikut lebar A4.
+       Jangan ubah saiz setiap kad/carta secara berasingan. */
+    const pxPerMm = canvas.width / usableW;
+    const pagePxH = Math.max(1, Math.floor(usableH * pxPerMm));
+
+    let y = 0;
+    let page = 0;
+    while (y < canvas.height) {
+      const h = Math.min(pagePxH, canvas.height - y);
+      const slice = document.createElement("canvas");
+      slice.width = canvas.width;
+      slice.height = h;
+      const ctx = slice.getContext("2d");
+      ctx.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
+
+      if (page > 0) pdf.addPage("a4", "landscape");
+      pdf.addImage(
+        slice.toDataURL("image/jpeg", 0.95),
+        "JPEG",
+        margin,
+        margin,
+        usableW,
+        h / pxPerMm,
+        undefined,
+        "FAST"
+      );
+      y += h;
+      page++;
     }
-    host.remove();host=null; pdf.save(`SKPO_LAPORAN_KESELURUHAN_HARIAN_${tarikh}.pdf`); paparMesej(statusId,`PDF ${escapeHtml(formatTarikhMalaysia(tarikh))} berjaya dijana tanpa memotong carta.`,"success");
-  } catch(error){if(host)host.remove();console.error("PDF laporan harian gagal:",error);paparMesej(statusId,`Gagal menjana PDF: ${escapeHtml(error?.message||"Ralat tidak diketahui.")}`,"error");}
-  finally{if(btn){btn.disabled=false;btn.textContent="MUAT TURUN PDF";}}
+
+    pdf.save(`SKPO_LAPORAN_KESELURUHAN_HARIAN_${tarikh}.pdf`);
+    paparMesej(statusId, `PDF laporan ${escapeHtml(formatTarikhMalaysia(tarikh))} berjaya dijana sama seperti paparan sistem.`, "success");
+  } catch (error) {
+    console.error("PDF laporan harian gagal:", error);
+    paparMesej(statusId, `Gagal menjana PDF: ${escapeHtml(error?.message || "Ralat tidak diketahui.")}`, "error");
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "MUAT TURUN PDF"; }
+  }
 }
 
 /* ================================================================
@@ -15722,10 +15572,6 @@ function muatTurunCsvPassKenderaanPentadbir() {
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`PASS_KENDERAAN_${el("tarikhPassKenderaanAdmin")?.value||hariIniMalaysia()}.csv`; document.body.appendChild(a); a.click(); URL.revokeObjectURL(a.href); a.remove();
 }
 
-window.login = login;
-window.logout = logout;
-window.ubahSusunanJawatankuasaPentadbir = ubahSusunanJawatankuasaPentadbir;
-
 document.addEventListener("DOMContentLoaded", () => {
   sediakanJanaPenugasanAuto();
   const inputTarikh = el("tarikh");
@@ -15805,40 +15651,4 @@ function toggleMenuPentadbir(paksaBuka = null) {
 
 document.addEventListener("keydown", function (event) {
   if (event.key === "Escape") toggleMenuPentadbir(false);
-});
-
-/* ================================================================
-   FIX 004 — PDF VIEW + PRINT 1 CARTA / HALAMAN
-================================================================ */
-async function fix004MuatTurunPdfView(){
-  const asal=document.getElementById('kandunganLaporanKeseluruhanHarian');
-  if(!asal) return alert('Sila jana laporan terlebih dahulu.');
-  if(!window.html2canvas || !window.jspdf?.jsPDF) return alert('Modul PDF belum dimuatkan. Muat semula halaman.');
-  const tarikh=document.getElementById('tarikhLaporanKeseluruhanHarian')?.value || new Date().toISOString().slice(0,10);
-  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-  const rect=asal.getBoundingClientRect();
-  const canvas=await html2canvas(asal,{scale:1.35,useCORS:true,allowTaint:false,backgroundColor:getComputedStyle(document.body).backgroundColor||'#111',logging:false,width:Math.round(rect.width),height:asal.scrollHeight,windowWidth:Math.max(innerWidth,Math.round(rect.width)),windowHeight:Math.max(innerHeight,asal.scrollHeight),scrollX:0,scrollY:-scrollY});
-  const W=297, H=W*(canvas.height/canvas.width);
-  const pdf=new jspdf.jsPDF({orientation:H>=W?'portrait':'landscape',unit:'mm',format:[W,H],compress:true});
-  pdf.addImage(canvas.toDataURL('image/jpeg',.96),'JPEG',0,0,W,H,undefined,'FAST');
-  pdf.save(`OP_LITAR_LAPORAN_KESELURUHAN_VIEW_${tarikh}.pdf`);
-}
-
-function fix004CetakSatuCartaSatuHalaman(){
-  const asal=document.getElementById('kandunganLaporanKeseluruhanHarian');
-  if(!asal) return alert('Sila jana laporan terlebih dahulu.');
-  const clone=asal.cloneNode(true);
-  clone.querySelectorAll('.admin-visitor-detail-panel,.admin-vehicle-detail-panel,.admin-attendance-list-panel,.admin-map-location-panel,.admin-vvip-detail-panel,.admin-incident-detail-panel').forEach(x=>x.remove());
-  clone.querySelectorAll('.admin-chart-card').forEach(x=>x.classList.add('fix004-page'));
-  const styles=[...document.querySelectorAll('link[rel="stylesheet"]')].map(x=>`<link rel="stylesheet" href="${new URL(x.getAttribute('href'),document.baseURI).href}">`).join('');
-  const w=open('','_blank','width=1500,height=950'); if(!w) return alert('Benarkan pop-up untuk cetakan.');
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8">${styles}<style>@page{size:A4 landscape;margin:7mm}html,body{margin:0;background:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}.fix004-page{break-before:page;page-break-before:always;break-inside:avoid;page-break-inside:avoid;width:100%!important;max-height:190mm!important;overflow:hidden!important}.fix004-page:first-child{break-before:auto;page-break-before:auto}.admin-visitor-layout,.admin-vehicle-layout,.admin-attendance-layout,.admin-operation-map-layout,.admin-vvip-layout,.admin-incident-layout{display:block!important}.admin-visitor-chart-panel,.admin-vehicle-chart-panel,.admin-attendance-chart-panel,.admin-operation-map-stage,.admin-vvip-list-panel,.admin-incident-chart-panel{width:100%!important;max-width:none!important}</style></head><body>${clone.outerHTML}<script>addEventListener('load',()=>setTimeout(()=>print(),800))<\\/script></body></html>`);
-  w.document.close();
-}
-
-addEventListener('DOMContentLoaded',()=>{
-  const pdf=document.getElementById('btnPdfLaporanKeseluruhanHarian');
-  const cetak=document.getElementById('btnCetakLaporanKeseluruhanHarian');
-  if(pdf){const n=pdf.cloneNode(true);pdf.replaceWith(n);n.addEventListener('click',fix004MuatTurunPdfView);}
-  if(cetak){const n=cetak.cloneNode(true);cetak.replaceWith(n);n.addEventListener('click',fix004CetakSatuCartaSatuHalaman);}
 });
