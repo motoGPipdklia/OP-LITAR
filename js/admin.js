@@ -530,7 +530,7 @@ let kanvasMarkerSeretPentadbir = null;
 
 
 const KUNCI_TETAPAN_PETA_CARTA_F1 = "skpoF1TetapanPetaCarta";
-const URL_PETA_ADMIN_F1 = "images/petaadmin.png?v=20260821-1334";
+const URL_PETA_ADMIN_F1 = "images/petaadmin.png?v=20261029-001";
 const KUNCI_KRONOLOGI_CARTA_F1 = "skpoF1KronologiCarta";
 
 
