@@ -1355,8 +1355,20 @@ if (!semakPerananPentadbir(profil)) {
 
     localStorage.setItem(KUNCI_ADMIN_F1, JSON.stringify(adminLogin));
 
-    el("loginPage").style.display = "none";
-    el("dashboard").style.display = "block";
+    const loginPage = el("loginPage");
+    const dashboard = el("dashboard");
+
+    if (loginPage) {
+      loginPage.style.display = "none";
+      loginPage.classList.add("hidden");
+    }
+
+    if (dashboard) {
+      dashboard.classList.remove("hidden");
+      dashboard.hidden = false;
+      dashboard.removeAttribute("hidden");
+      dashboard.style.setProperty("display", "block", "important");
+    }
     el("adminName").textContent = [
       adminLogin.pangkat,
       adminLogin.nama,
@@ -1422,8 +1434,20 @@ if (!semakPerananPentadbir(profil)) {
       peranan: atas(profil.peranan)
     };
 
-    el("loginPage").style.display = "none";
-    el("dashboard").style.display = "block";
+    const loginPage = el("loginPage");
+    const dashboard = el("dashboard");
+
+    if (loginPage) {
+      loginPage.style.display = "none";
+      loginPage.classList.add("hidden");
+    }
+
+    if (dashboard) {
+      dashboard.classList.remove("hidden");
+      dashboard.hidden = false;
+      dashboard.removeAttribute("hidden");
+      dashboard.style.setProperty("display", "block", "important");
+    }
     el("adminName").textContent = [
       adminLogin.pangkat,
       adminLogin.nama,
@@ -1445,8 +1469,22 @@ async function logout() {
   dataDashboard = [];
   dataPaparan = [];
 
-  el("dashboard").style.display = "none";
-  el("loginPage").style.display = "flex";
+  const dashboard = el("dashboard");
+  const loginPage = el("loginPage");
+
+  if (dashboard) {
+    dashboard.classList.add("hidden");
+    dashboard.hidden = true;
+    dashboard.setAttribute("hidden", "");
+    dashboard.style.setProperty("display", "none", "important");
+  }
+
+  if (loginPage) {
+    loginPage.classList.remove("hidden");
+    loginPage.hidden = false;
+    loginPage.removeAttribute("hidden");
+    loginPage.style.setProperty("display", "flex", "important");
+  }
   el("noBadan").value = "";
   el("password").value = "";
   el("loginStatus").innerHTML = "";
