@@ -1,6 +1,6 @@
 "use strict";
 
-/* SUBTEK FIX008 — Carta Operasi: kad Pengunjung/Kenderaan guna nilai PEAK */
+/* SUBTEK FIX009 — Jawatankuasa: susunan manual NAIK/TURUN melalui kolum susunan */
 
 /* SKPO FORMULA 1 BUILD: 20260928-RANK-PB-HOLDER-FIX-017 */
 
@@ -13236,38 +13236,32 @@ if (!senarai.length) {
 function dataJawatankuasaPentadbir() {
   return [...dataJawatankuasaOperasiPentadbir]
     .sort((a, b) => {
-      const kumpulanA =
-        atas(a.jawatankuasa);
+      const kumpulanA = atas(a.jawatankuasa);
+      const kumpulanB = atas(b.jawatankuasa);
 
-      const kumpulanB =
-        atas(b.jawatankuasa);
-
-      if (
-        kumpulanA !== kumpulanB
-      ) {
-        return kumpulanA.localeCompare(
-          kumpulanB,
-          "ms"
-        );
+      if (kumpulanA !== kumpulanB) {
+        return kumpulanA.localeCompare(kumpulanB, "ms");
       }
 
-      const tugasA =
-        atas(a.tugas);
+      const susunanA = Number(a.susunan);
+      const susunanB = Number(b.susunan);
+      const sahA = Number.isFinite(susunanA) && susunanA > 0;
+      const sahB = Number.isFinite(susunanB) && susunanB > 0;
 
-      const tugasB =
-        atas(b.tugas);
+      if (sahA && sahB && susunanA !== susunanB) {
+        return susunanA - susunanB;
+      }
+      if (sahA && !sahB) return -1;
+      if (!sahA && sahB) return 1;
+
+      const tugasA = atas(a.tugas);
+      const tugasB = atas(b.tugas);
 
       if (tugasA !== tugasB) {
-        return tugasA.localeCompare(
-          tugasB,
-          "ms"
-        );
+        return tugasA.localeCompare(tugasB, "ms");
       }
 
-      return atas(a.nama).localeCompare(
-        atas(b.nama),
-        "ms"
-      );
+      return atas(a.nama).localeCompare(atas(b.nama), "ms");
     });
 }
 
@@ -13314,6 +13308,7 @@ async function muatJawatankuasaOperasiPentadbir(
           .select("*")
           .eq("tarikh", tarikhDipilih)
           .order("jawatankuasa", { ascending: true })
+          .order("susunan", { ascending: true, nullsFirst: false })
           .order("tugas", { ascending: true })
           .order("nama", { ascending: true })
       );
@@ -13764,11 +13759,25 @@ async function simpanJawatankuasaPentadbir() {
             .single()
         );
     } else {
+      const rekodKumpulan =
+        dataJawatankuasaOperasiPentadbir.filter(
+          item => atas(item.jawatankuasa) === jawatankuasa
+        );
+
+      const susunanSeterusnya =
+        rekodKumpulan.reduce((maksimum, item) => {
+          const nilai = Number(item.susunan);
+          return Number.isFinite(nilai) && nilai > maksimum
+            ? nilai
+            : maksimum;
+        }, 0) + 1;
+
       hasil =
         await denganHadMasa(
           db.from("jawatankuasa_operasi")
             .insert({
               ...payload,
+              susunan: susunanSeterusnya,
               dicipta_oleh:
                 adminLogin?.id || null
             })
@@ -13829,6 +13838,137 @@ async function simpanJawatankuasaPentadbir() {
     btn.disabled = false;
     btn.textContent =
       "SIMPAN JAWATANKUASA";
+  }
+}
+
+
+async function ubahSusunanJawatankuasaPentadbir(id, arah) {
+  const rekod = dataJawatankuasaOperasiPentadbir.find(
+    item => teks(item.id) === teks(id)
+  );
+
+  if (!rekod) return;
+
+  const kumpulan = dataJawatankuasaPentadbir().filter(
+    item => atas(item.jawatankuasa) === atas(rekod.jawatankuasa)
+  );
+
+  const indeks = kumpulan.findIndex(
+    item => teks(item.id) === teks(id)
+  );
+
+  if (indeks < 0) return;
+
+  const indeksSasaran =
+    atas(arah) === "NAIK"
+      ? indeks - 1
+      : indeks + 1;
+
+  if (
+    indeksSasaran < 0 ||
+    indeksSasaran >= kumpulan.length
+  ) {
+    return;
+  }
+
+  const sasaran = kumpulan[indeksSasaran];
+
+  /*
+    Normalisasikan susunan kumpulan dahulu supaya rekod lama yang
+    susunan=NULL juga boleh terus menggunakan butang NAIK/TURUN.
+  */
+  const normal = kumpulan.map((item, index) => ({
+    ...item,
+    susunanNormal: index + 1
+  }));
+
+  const rekodNormal = normal.find(
+    item => teks(item.id) === teks(rekod.id)
+  );
+  const sasaranNormal = normal.find(
+    item => teks(item.id) === teks(sasaran.id)
+  );
+
+  if (!rekodNormal || !sasaranNormal) return;
+
+  try {
+    paparMesej(
+      "statusJawatankuasaPentadbir",
+      "Sedang mengubah susunan jawatankuasa...",
+      "warning"
+    );
+
+    /*
+      Simpan nombor unik sementara untuk mengelakkan konflik jika
+      kolum susunan mempunyai unique constraint.
+    */
+    const sementara = 1000000 + Date.now() % 100000;
+
+    const langkah1 = await denganHadMasa(
+      db.from("jawatankuasa_operasi")
+        .update({ susunan: sementara })
+        .eq("id", rekod.id)
+    );
+    if (langkah1.error) throw langkah1.error;
+
+    const langkah2 = await denganHadMasa(
+      db.from("jawatankuasa_operasi")
+        .update({ susunan: rekodNormal.susunanNormal })
+        .eq("id", sasaran.id)
+    );
+    if (langkah2.error) throw langkah2.error;
+
+    const langkah3 = await denganHadMasa(
+      db.from("jawatankuasa_operasi")
+        .update({ susunan: sasaranNormal.susunanNormal })
+        .eq("id", rekod.id)
+    );
+    if (langkah3.error) throw langkah3.error;
+
+    /*
+      Rekod lain dalam kumpulan turut dinormalisasikan 1,2,3...
+      supaya paparan ADMIN dan SUBTEK sentiasa konsisten.
+    */
+    for (const item of normal) {
+      if (
+        teks(item.id) === teks(rekod.id) ||
+        teks(item.id) === teks(sasaran.id)
+      ) continue;
+
+      if (Number(item.susunan) !== item.susunanNormal) {
+        const kemasKini = await denganHadMasa(
+          db.from("jawatankuasa_operasi")
+            .update({ susunan: item.susunanNormal })
+            .eq("id", item.id)
+        );
+        if (kemasKini.error) throw kemasKini.error;
+      }
+    }
+
+    await muatJawatankuasaOperasiPentadbir(
+      rekod.tarikh,
+      false
+    );
+
+    paparMesej(
+      "statusJawatankuasaPentadbir",
+      "Susunan jawatankuasa berjaya dikemas kini.",
+      "success"
+    );
+
+  } catch (error) {
+    console.error("Ubah susunan jawatankuasa gagal:", error);
+
+    paparMesej(
+      "statusJawatankuasaPentadbir",
+      `Gagal mengubah susunan: ${escapeHtml(error.message || "Ralat tidak diketahui.")}`,
+      "error"
+    );
+
+    await muatJawatankuasaOperasiPentadbir(
+      rekod.tarikh,
+      false
+    ).catch(() => {});
   }
 }
 
@@ -13973,6 +14113,24 @@ if (!senarai.length) {
           </div>
 
           <div class="admin-committee-row-actions">
+            <button
+              class="admin-committee-edit-button"
+              type="button"
+              title="Naikkan kedudukan"
+              onclick="ubahSusunanJawatankuasaPentadbir('${escapeHtml(item.id)}', 'NAIK')"
+            >
+              ↑ NAIK
+            </button>
+
+            <button
+              class="admin-committee-edit-button"
+              type="button"
+              title="Turunkan kedudukan"
+              onclick="ubahSusunanJawatankuasaPentadbir('${escapeHtml(item.id)}', 'TURUN')"
+            >
+              ↓ TURUN
+            </button>
+
             <button
               class="admin-committee-edit-button"
               type="button"
