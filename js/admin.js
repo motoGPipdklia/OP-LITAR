@@ -69,6 +69,7 @@ const petugasSudahAdaPenugasanAuto = new Set();
 const KUNCI_DEVICE_F1_ADMIN = "skpoF1DeviceId";
 const HAD_PERANTI_KHAS_ADMIN = 2;
 let dataPerantiKhasAdmin = [];
+let deviceIdPerantiKhasDipilihAdmin = "";
 
 
 /* ================================================================
@@ -1071,7 +1072,7 @@ async function muatPerantiKhasAdmin() {
     if (tbody) {
       if (!dataPerantiKhasAdmin.length) {
         tbody.innerHTML =
-          '<tr><td colspan="4" class="empty-row">Belum ada peranti khas didaftarkan.</td></tr>';
+          '<tr><td colspan="5" class="empty-row">Belum ada peranti khas didaftarkan.</td></tr>';
       } else {
         tbody.innerHTML = dataPerantiKhasAdmin.map((item, index) => {
           const catatan = teks(item.catatan) || "-";
@@ -1085,6 +1086,16 @@ async function muatPerantiKhasAdmin() {
               <td>${escapeHtml(jenisPeranti)}</td>
               <td style="word-break:break-all">${escapeHtml(item.device_id || "-")}</td>
               <td>${escapeHtml(catatan)}</td>
+              <td>
+                <button
+                  type="button"
+                  class="reset-device"
+                  style="white-space:nowrap;background:#2f6fa8;"
+                  onclick="pilihPerantiKhasAdmin('${escapeHtml(item.device_id || "")}');tukarDeviceIdPerantiKhasAdmin('${escapeHtml(item.device_id || "")}')"
+                >
+                  TUKAR DEVICE ID
+                </button>
+              </td>
             </tr>
           `;
         }).join("");
@@ -1104,6 +1115,114 @@ async function muatPerantiKhasAdmin() {
       "mesejPerantiKhasAdmin",
       `Gagal menyemak peranti khas: ${escapeHtml(error.message)}. ` +
       "Pastikan kolum akses_semua_petugas dan catatan telah diwujudkan dalam device_whitelist.",
+      "error"
+    );
+  }
+}
+
+
+function pilihPerantiKhasAdmin(deviceId) {
+  deviceIdPerantiKhasDipilihAdmin = teks(deviceId);
+}
+
+async function tukarDeviceIdPerantiKhasAdmin(deviceIdLama = "") {
+  if (!adminLogin) return;
+
+  const lama = teks(deviceIdLama || deviceIdPerantiKhasDipilihAdmin);
+  const rekodLama = dataPerantiKhasAdmin.find(
+    item => atas(item.device_id) === atas(lama)
+  );
+
+  if (!rekodLama) {
+    paparMesej("mesejPerantiKhasAdmin", "Rekod peranti khas tidak dijumpai.", "error");
+    return;
+  }
+
+  const catatanLama = teks(rekodLama.catatan);
+  const jenisLama =
+    /TELEFON/i.test(catatanLama) ? "TELEFON" :
+    /LAPTOP/i.test(catatanLama) ? "LAPTOP" : "";
+
+  const deviceIdBaharu = dapatkanDeviceIdAdmin();
+  const jenisSemasa = jenisPerantiSemasaAdmin();
+
+  if (!jenisLama) {
+    paparMesej("mesejPerantiKhasAdmin", "Jenis peranti lama tidak dapat dikenal pasti.", "error");
+    return;
+  }
+
+  if (jenisSemasa !== jenisLama) {
+    paparMesej(
+      "mesejPerantiKhasAdmin",
+      `Rekod yang dipilih ialah ${escapeHtml(jenisLama)}, tetapi peranti semasa dikesan sebagai ${escapeHtml(jenisSemasa)}. ` +
+      `Buka admin.html menggunakan ${escapeHtml(jenisLama)} baharu dan cuba semula.`,
+      "error"
+    );
+    return;
+  }
+
+  if (atas(deviceIdBaharu) === atas(lama)) {
+    paparMesej("mesejPerantiKhasAdmin", `${escapeHtml(jenisLama)} ini sudah menggunakan Device ID tersebut.`, "warning");
+    return;
+  }
+
+  const konflik = dataPerantiKhasAdmin.some(
+    item => atas(item.device_id) === atas(deviceIdBaharu) &&
+            atas(item.device_id) !== atas(lama) &&
+            item.aktif !== false
+  );
+  if (konflik) {
+    paparMesej("mesejPerantiKhasAdmin", "Device ID baharu sudah wujud sebagai peranti khas.", "error");
+    return;
+  }
+
+  if (!confirm(
+    `Tukar Device ID ${jenisLama}?\n\nLAMA:\n${lama}\n\nBAHARU:\n${deviceIdBaharu}\n\n` +
+    "Device ID lama akan dinyahaktifkan."
+  )) return;
+
+  try {
+    const { error: tambahError } = await denganHadMasa(
+      db.from("device_whitelist").upsert({
+        device_id: deviceIdBaharu,
+        akses_semua_petugas: true,
+        aktif: true,
+        catatan: `PERANTI KHAS ADMINF1 - ${jenisLama}`
+      }, { onConflict: "device_id" })
+    );
+    if (tambahError) throw tambahError;
+
+    const { error: lamaError } = await denganHadMasa(
+      db.from("device_whitelist")
+        .update({
+          akses_semua_petugas: false,
+          aktif: false,
+          catatan: `${catatanLama || `PERANTI KHAS ADMINF1 - ${jenisLama}`} - DIGANTI`
+        })
+        .eq("device_id", lama)
+    );
+
+    if (lamaError) {
+      await db.from("device_whitelist")
+        .update({ akses_semua_petugas: false, aktif: false })
+        .eq("device_id", deviceIdBaharu);
+      throw lamaError;
+    }
+
+    deviceIdPerantiKhasDipilihAdmin = "";
+    await muatPerantiKhasAdmin();
+
+    paparMesej(
+      "mesejPerantiKhasAdmin",
+      `<strong>DEVICE ID ${escapeHtml(jenisLama)} BERJAYA DITUKAR.</strong><br>` +
+      `Device ID baharu: ${escapeHtml(deviceIdBaharu)}`,
+      "success"
+    );
+  } catch (error) {
+    console.error("Gagal menukar Device ID peranti khas:", error);
+    paparMesej(
+      "mesejPerantiKhasAdmin",
+      `Gagal menukar Device ID: ${escapeHtml(error?.message || "Ralat tidak diketahui.")}`,
       "error"
     );
   }
