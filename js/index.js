@@ -611,6 +611,17 @@ function normalisasiJenisTugasPelaporan(nilai) {
   if (jenis.includes("UNIT PEMUSNAH BOM")) return "UNIT PEMUSNAH BOM";
   if (jenis.includes("SUBTEK")) return "SUBTEK";
 
+  /* FIX 20261030 — TUGAS AM menggunakan Borang Kawalan Keselamatan.
+     Nama jenis tugas asal pada penugasan/dashboard tidak diubah.
+     Pemetaan ini hanya digunakan oleh modul pelaporan. */
+  if (
+    jenis.includes("TUGAS AM (PENYELIA)") ||
+    jenis.includes("TUGAS AM (STATIK)") ||
+    jenis.includes("TUGAS AM (RONDA)")
+  ) {
+    return "KAWALAN KESELAMATAN";
+  }
+
   return jenis;
 }
 
