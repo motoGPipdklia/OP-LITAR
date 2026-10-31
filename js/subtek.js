@@ -1,6 +1,9 @@
 "use strict";
 
-/* SUBTEK BUILD: 20261031-SNAPSHOT-SYNC-002 — Kiraan pengunjung & kenderaan diselaraskan dengan admin.js */
+/* SUBTEK BUILD: 20261031-LOCATION-PEAK-005 — Diselaraskan dengan admin.js LOCATION-PEAK-005
+   - Pecahan lokasi Pengunjung: DATANG vs KELUAR
+   - JUMLAH KESELURUHAN = nilai tertinggi (PEAK) sepanjang hari
+   - Kenderaan lokasi: JUMLAH KESELURUHAN = nilai tertinggi (PEAK) sepanjang hari */
 /* SUBTEK FIX009 — Jawatankuasa: susunan manual NAIK/TURUN melalui kolum susunan */
 
 /* SKPO FORMULA 1 BUILD: 20260928-RANK-PB-HOLDER-FIX-017 */
@@ -9040,13 +9043,20 @@ function binaSnapshotKenderaanPentadbir() {
 
 function ringkasanPengunjungMengikutLokasiPentadbir() {
   const { keadaan, keluarMengikutLokasi } = binaSnapshotPengunjungPentadbir();
-  return [...keadaan.entries()].map(([lokasi,baki]) => ({
-    lokasi,
-    datang: Math.max(0, baki),
-    keluar: keluarMengikutLokasi.get(lokasi) || 0,
-    baki: Math.max(0, baki),
-    bilLaporan: senaraiPengunjungCartaPentadbir().filter(i => lokasiLaporanPengunjungPentadbir(i) === lokasi).length
-  })).sort((a,b) => b.baki-a.baki || a.lokasi.localeCompare(b.lokasi,"ms"));
+  return [...keadaan.entries()].map(([lokasi,baki]) => {
+    const keluar = Math.max(0, keluarMengikutLokasi.get(lokasi) || 0);
+    const bakiSemasa = Math.max(0, baki);
+
+    return {
+      lokasi,
+      // DATANG ialah jumlah asal yang berada di lokasi sebelum rekod keluar ditolak.
+      datang: bakiSemasa + keluar,
+      keluar,
+      // BAKI kekal snapshot semasa dan digunakan untuk JUMLAH KESELURUHAN lokasi.
+      baki: bakiSemasa,
+      bilLaporan: senaraiPengunjungCartaPentadbir().filter(i => lokasiLaporanPengunjungPentadbir(i) === lokasi).length
+    };
+  }).sort((a,b) => b.baki-a.baki || a.lokasi.localeCompare(b.lokasi,"ms"));
 }
 
 
@@ -9089,35 +9099,59 @@ function paparCartaPengunjungLokasiPentadbir() {
   const labels =
     ringkasan.map(item => item.lokasi);
 
-  /*
-    Paparan lokasi hanya menunjukkan pengunjung DATANG.
-    Rekod keluar masih disimpan dan digunakan pada bahagian lain,
-    tetapi tidak dipaparkan dalam carta ini.
-  */
-  const nilai =
+  const nilaiDatang =
     ringkasan.map(item => item.datang);
 
-  const jumlahKeseluruhan =
+  const nilaiKeluar =
+    ringkasan.map(item => item.keluar);
+
+  const jumlahDatang =
     ringkasan.reduce(
       (jumlah, item) => jumlah + item.datang,
       0
     );
 
+  const jumlahKeluar =
+    ringkasan.reduce(
+      (jumlah, item) => jumlah + item.keluar,
+      0
+    );
+
+  /*
+    item.datang sudah merupakan BAKI SNAPSHOT semasa bagi setiap lokasi.
+    Rekod keluar manual telah pun ditolak ketika binaSnapshotPengunjungPentadbir().
+    Jangan tolak jumlahKeluar kali kedua.
+  */
+  const bakiKeseluruhan =
+    ringkasan.reduce(
+      (jumlah, item) => jumlah + Math.max(0, item.baki),
+      0
+    );
+
+  /*
+    FIX LOCATION-PEAK-005:
+    JUMLAH KESELURUHAN ialah nilai TERTINGGI (PEAK) sepanjang hari,
+    sama seperti Laporan Keseluruhan Harian. Baki semasa kekal digunakan
+    untuk snapshot/graf utama dan bar lokasi kekal DATANG vs KELUAR.
+  */
+  const titikPengunjung = binaSnapshotPengunjungPentadbir().titik;
+  const jumlahTertinggi = titikPengunjung.reduce(
+    (maks, titik) => Math.max(maks, Number(titik.jumlah) || 0),
+    0
+  );
+
   const jumlahBox =
     el("jumlahKeseluruhanPengunjungLokasiPentadbir");
 
   if (jumlahBox) {
-    /*
-      Paparan JUMLAH KESELURUHAN dibuang sepenuhnya
-      daripada panel PENGUNJUNG MENGIKUT LOKASI.
-    */
-    const kotakJumlah =
-      jumlahBox.closest(".admin-chart-location-total") ||
-      jumlahBox.parentElement;
+    jumlahBox.textContent =
+      jumlahTertinggi.toLocaleString("ms-MY");
 
-    if (kotakJumlah) {
-      kotakJumlah.style.display = "none";
-    }
+    jumlahBox.title =
+      `Jumlah tertinggi: ${jumlahTertinggi.toLocaleString("ms-MY")} | ` +
+      `Datang: ${jumlahDatang.toLocaleString("ms-MY")} | ` +
+      `Keluar: ${jumlahKeluar.toLocaleString("ms-MY")} | ` +
+      `Baki semasa: ${bakiKeseluruhan.toLocaleString("ms-MY")}`;
   }
 
   kemusnahkanCartaPentadbir(
@@ -9135,8 +9169,15 @@ function paparCartaPengunjungLokasiPentadbir() {
 
           datasets: [
             {
-              label: "JUMLAH PENGUNJUNG",
-              data: nilai,
+              label: "PENGUNJUNG DATANG",
+              data: nilaiDatang,
+              borderWidth: 2,
+              borderRadius: 6,
+              borderSkipped: false
+            },
+            {
+              label: "PENGUNJUNG KELUAR",
+              data: nilaiKeluar,
               borderWidth: 2,
               borderRadius: 6,
               borderSkipped: false
@@ -9242,20 +9283,33 @@ function paparCartaPengunjungLokasiPentadbir() {
 
               callbacks: {
                 label(context) {
-                  return (
-                    `JUMLAH PENGUNJUNG: ${Number(context.raw || 0).toLocaleString("ms-MY")}`
-                  );
-                },
-
-                afterLabel(context) {
                   const rekod =
                     ringkasan[
                       context.dataIndex
                     ];
 
+                  const nilai =
+                    Number(context.raw || 0)
+                      .toLocaleString("ms-MY");
+
                   return (
-                    `${rekod?.bilLaporan || 0} rekod/laporan`
+                    `${context.dataset.label}: ${nilai}`
                   );
+                },
+
+                afterBody(context) {
+                  const indeks =
+                    context?.[0]?.dataIndex;
+
+                  const rekod =
+                    ringkasan[indeks];
+
+                  if (!rekod) return [];
+
+                  return [
+                    `BAKI DI LOKASI: ${rekod.baki.toLocaleString("ms-MY")}`,
+                    `${rekod.bilLaporan || 0} REKOD/LAPORAN`
+                  ];
                 },
 
                 footer() {
@@ -10205,29 +10259,47 @@ function paparCartaKenderaanLokasiPentadbir() {
     ringkasanKenderaanMengikutLokasiPentadbir();
 
   const labels =
-    ringkasan.map(item => item.lokasi);
+    ringkasan.map(
+      item => item.lokasi
+    );
 
   const dataBas =
-    ringkasan.map(item => item.bas);
+    ringkasan.map(
+      item => item.bas
+    );
 
   const dataMotokar =
-    ringkasan.map(item => item.motokar);
+    ringkasan.map(
+      item => item.motokar
+    );
 
   const dataMotosikal =
-    ringkasan.map(item => item.motosikal);
+    ringkasan.map(
+      item => item.motosikal
+    );
 
-  // Buang paparan JUMLAH KESELURUHAN seperti carta pengunjung.
-  const jumlahBox =
-    el("jumlahKeseluruhanKenderaanLokasiPentadbir");
+  /*
+    FIX LOCATION-PEAK-005:
+    JUMLAH KESELURUHAN KENDERAAN juga ialah nilai TERTINGGI (PEAK)
+    sepanjang hari supaya sama dengan Laporan Keseluruhan Harian.
+  */
+  const titikKenderaan = binaSnapshotKenderaanPentadbir().titik;
+  const jumlahKeseluruhan = titikKenderaan.reduce(
+    (maks, titik) => Math.max(maks, Number(titik.jumlah) || 0),
+    0
+  );
 
-  if (jumlahBox) {
-    const kotakJumlah =
-      jumlahBox.closest(".admin-chart-location-total") ||
-      jumlahBox.parentElement;
-
-    if (kotakJumlah) {
-      kotakJumlah.style.display = "none";
-    }
+  if (
+    el(
+      "jumlahKeseluruhanKenderaanLokasiPentadbir"
+    )
+  ) {
+    el(
+      "jumlahKeseluruhanKenderaanLokasiPentadbir"
+    ).textContent =
+      jumlahKeseluruhan.toLocaleString(
+        "ms-MY"
+      );
   }
 
   kemusnahkanCartaPentadbir(
@@ -10245,21 +10317,21 @@ function paparCartaKenderaanLokasiPentadbir() {
 
           datasets: [
             {
-              label: "BAS",
+              label: "Bas",
               data: dataBas,
               borderWidth: 2,
               borderRadius: 5,
               borderSkipped: false
             },
             {
-              label: "MOTOKAR",
+              label: "Motokar",
               data: dataMotokar,
               borderWidth: 2,
               borderRadius: 5,
               borderSkipped: false
             },
             {
-              label: "MOTOSIKAL",
+              label: "Motosikal",
               data: dataMotosikal,
               borderWidth: 2,
               borderRadius: 5,
@@ -10269,9 +10341,12 @@ function paparCartaKenderaanLokasiPentadbir() {
         },
 
         options: {
-          ...pilihanCartaPentadbir("Jumlah Kenderaan"),
+          ...pilihanCartaPentadbir(
+            "Jumlah Kenderaan"
+          ),
 
           indexAxis: "y",
+
           maintainAspectRatio: false,
 
           interaction: {
@@ -10282,31 +10357,40 @@ function paparCartaKenderaanLokasiPentadbir() {
           scales: {
             x: {
               beginAtZero: true,
+
               stacked: true,
+
               ticks: {
                 color: "#d8d8d8",
                 precision: 0
               },
+
               grid: {
-                color: "rgba(255,255,255,.08)"
+                color:
+                  "rgba(255,255,255,.08)"
               },
+
               title: {
                 display: true,
-                text: "Jumlah Kenderaan",
+                text:
+                  "Jumlah Kenderaan",
                 color: "#d8d8d8"
               }
             },
 
             y: {
               stacked: true,
+
               ticks: {
                 color: "#ffffff",
                 font: {
                   weight: "700"
                 }
               },
+
               grid: {
-                color: "rgba(255,255,255,.05)"
+                color:
+                  "rgba(255,255,255,.05)"
               }
             }
           },
@@ -10317,14 +10401,18 @@ function paparCartaKenderaanLokasiPentadbir() {
                 ?.getElementsAtEventForMode(
                   event,
                   "nearest",
-                  { intersect: true },
+                  {
+                    intersect: true
+                  },
                   true
                 ) || [];
 
             if (!elemen.length) return;
 
             const rekod =
-              ringkasan[elemen[0].index];
+              ringkasan[
+                elemen[0].index
+              ];
 
             if (!rekod) return;
 
@@ -10339,12 +10427,16 @@ function paparCartaKenderaanLokasiPentadbir() {
 
             if (sasaran) {
               sasaran.style.cursor =
-                elements?.length ? "pointer" : "default";
+                elements?.length
+                  ? "pointer"
+                  : "default";
             }
           },
 
           plugins: {
-            ...pilihanCartaPentadbir("Jumlah Kenderaan").plugins,
+            ...pilihanCartaPentadbir(
+              "Jumlah Kenderaan"
+            ).plugins,
 
             legend: {
               display: true,
