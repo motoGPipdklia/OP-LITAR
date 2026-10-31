@@ -1,6 +1,6 @@
 "use strict";
 
-/* SKPO OP LITAR BUILD: 20261031-SNAPSHOT-HOURLY-001 */
+/* SKPO OP LITAR BUILD: 20261031-SNAPSHOT-SYNC-002 */
 
 /* ================================================================
    SKPO FORMULA 1 — PENTADBIR
@@ -8720,60 +8720,34 @@ function jumlahPengunjungSemasaCarta() {
 
 
 function pecahanKenderaanSemasaCarta() {
-  return senaraiKenderaanCartaPentadbir()
-    .reduce(
-      (jumlah, item) => {
-        const data =
-          dataLaporanCarta(item);
+  /*
+    FIX SNAPSHOT-SYNC-002:
+    Kad JUMLAH KENDERAAN PENGUNJUNG mesti menggunakan snapshot semasa
+    yang sama seperti Carta Kenderaan Mengikut Lokasi dan titik terakhir
+    Carta Trend. Jangan jumlahkan semua laporan lama kerana itu menyebabkan
+    kiraan berulang.
+  */
+  const { keadaan } = binaSnapshotKenderaanPentadbir();
 
-        const kenderaan =
-          data.kenderaan &&
-          typeof data.kenderaan === "object"
-            ? data.kenderaan
-            : {};
+  const jumlah = {
+    bas: 0,
+    motosikal: 0,
+    motokar: 0,
+    jumlah: 0
+  };
 
-        const bas =
-          nomborCarta(
-            kenderaan.bas ??
-            data.bas,
-            0
-          );
+  keadaan.forEach(item => {
+    jumlah.bas += Math.max(0, Number(item?.bas) || 0);
+    jumlah.motosikal += Math.max(0, Number(item?.motosikal) || 0);
+    jumlah.motokar += Math.max(0, Number(item?.motokar) || 0);
+  });
 
-        const motosikal =
-          nomborCarta(
-            kenderaan.motosikal ??
-            data.motosikal,
-            0
-          );
+  jumlah.jumlah =
+    jumlah.bas +
+    jumlah.motosikal +
+    jumlah.motokar;
 
-        const motokar =
-          nomborCarta(
-            kenderaan.motokar ??
-            data.motokar,
-            0
-          );
-
-        const jumlahItem =
-          nomborCarta(
-            kenderaan.jumlah ??
-            item.jumlah_kenderaan,
-            bas + motosikal + motokar
-          );
-
-        jumlah.bas += bas;
-        jumlah.motosikal += motosikal;
-        jumlah.motokar += motokar;
-        jumlah.jumlah += jumlahItem;
-
-        return jumlah;
-      },
-      {
-        bas: 0,
-        motosikal: 0,
-        motokar: 0,
-        jumlah: 0
-      }
-    );
+  return jumlah;
 }
 
 
@@ -9210,8 +9184,13 @@ function paparCartaPengunjungLokasiPentadbir() {
       0
     );
 
+  /*
+    item.datang sudah merupakan BAKI SNAPSHOT semasa bagi setiap lokasi.
+    Rekod keluar manual telah pun ditolak ketika binaSnapshotPengunjungPentadbir().
+    Jangan tolak jumlahKeluar kali kedua.
+  */
   const bakiKeseluruhan =
-    jumlahDatang - jumlahKeluar;
+    Math.max(0, jumlahDatang);
 
   /*
     Kekalkan kotak JUMLAH KESELURUHAN sedia ada sebagai baki semasa.
