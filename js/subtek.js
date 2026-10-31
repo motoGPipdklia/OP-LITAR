@@ -1,5 +1,6 @@
 "use strict";
 
+/* SUBTEK BUILD: 20261031-SNAPSHOT-SYNC-002 — Kiraan pengunjung & kenderaan diselaraskan dengan admin.js */
 /* SUBTEK FIX009 — Jawatankuasa: susunan manual NAIK/TURUN melalui kolum susunan */
 
 /* SKPO FORMULA 1 BUILD: 20260928-RANK-PB-HOLDER-FIX-017 */
@@ -8623,76 +8624,40 @@ function laporanTerkiniKeselamatanCarta() {
 
 
 function jumlahPengunjungSemasaCarta() {
-  /*
-    JUMLAH KESELURUHAN PENGUNJUNG
-    Gabungkan semua laporan Kawalan Keselamatan
-    dan rekod manual + PENGUNJUNG bagi tarikh dipilih.
-  */
-  return senaraiPengunjungCartaPentadbir()
-    .reduce(
-      (jumlah, item) =>
-        jumlah +
-        nilaiJumlahPengunjungPentadbir(item),
-      0
-    );
+  const titik = binaSnapshotPengunjungPentadbir().titik;
+  return titik.length ? Math.max(0, titik[titik.length - 1].jumlah) : 0;
 }
 
 
 function pecahanKenderaanSemasaCarta() {
-  return senaraiKenderaanCartaPentadbir()
-    .reduce(
-      (jumlah, item) => {
-        const data =
-          dataLaporanCarta(item);
+  /*
+    FIX SNAPSHOT-SYNC-002:
+    Kad JUMLAH KENDERAAN PENGUNJUNG mesti menggunakan snapshot semasa
+    yang sama seperti Carta Kenderaan Mengikut Lokasi dan titik terakhir
+    Carta Trend. Jangan jumlahkan semua laporan lama kerana itu menyebabkan
+    kiraan berulang.
+  */
+  const { keadaan } = binaSnapshotKenderaanPentadbir();
 
-        const kenderaan =
-          data.kenderaan &&
-          typeof data.kenderaan === "object"
-            ? data.kenderaan
-            : {};
+  const jumlah = {
+    bas: 0,
+    motosikal: 0,
+    motokar: 0,
+    jumlah: 0
+  };
 
-        const bas =
-          nomborCarta(
-            kenderaan.bas ??
-            data.bas,
-            0
-          );
+  keadaan.forEach(item => {
+    jumlah.bas += Math.max(0, Number(item?.bas) || 0);
+    jumlah.motosikal += Math.max(0, Number(item?.motosikal) || 0);
+    jumlah.motokar += Math.max(0, Number(item?.motokar) || 0);
+  });
 
-        const motosikal =
-          nomborCarta(
-            kenderaan.motosikal ??
-            data.motosikal,
-            0
-          );
+  jumlah.jumlah =
+    jumlah.bas +
+    jumlah.motosikal +
+    jumlah.motokar;
 
-        const motokar =
-          nomborCarta(
-            kenderaan.motokar ??
-            data.motokar,
-            0
-          );
-
-        const jumlahItem =
-          nomborCarta(
-            kenderaan.jumlah ??
-            item.jumlah_kenderaan,
-            bas + motosikal + motokar
-          );
-
-        jumlah.bas += bas;
-        jumlah.motosikal += motosikal;
-        jumlah.motokar += motokar;
-        jumlah.jumlah += jumlahItem;
-
-        return jumlah;
-      },
-      {
-        bas: 0,
-        motosikal: 0,
-        motokar: 0,
-        jumlah: 0
-      }
-    );
+  return jumlah;
 }
 
 
@@ -8984,55 +8949,104 @@ function lokasiLaporanPengunjungPentadbir(item) {
 }
 
 
+
+
+function kunciJamCartaPentadbir(item) {
+  const masa = item?.tarikh_masa ? new Date(item.tarikh_masa) : null;
+  if (!masa || Number.isNaN(masa.getTime())) return "-";
+  const bahagian = new Intl.DateTimeFormat("en-CA", {
+    timeZone: ZON_MASA, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hour12: false
+  }).formatToParts(masa).reduce((o, p) => { o[p.type] = p.value; return o; }, {});
+  return `${bahagian.year}-${bahagian.month}-${bahagian.day} ${bahagian.hour}:00`;
+}
+
+function labelJamCartaPentadbir(kunci) {
+  const padan = String(kunci || "").match(/ (\d{2}):00$/);
+  return padan ? `${padan[1]}:00` : kunci;
+}
+
+function binaSnapshotPengunjungPentadbir() {
+  const senarai = senaraiPengunjungCartaPentadbir();
+  const keadaan = new Map();
+  const keluarMengikutLokasi = new Map();
+  const titik = [];
+  let jamSemasa = null;
+  let itemAkhir = null;
+
+  const simpanTitik = () => {
+    if (!jamSemasa) return;
+    const jumlah = [...keadaan.values()].reduce((a,b) => a + Math.max(0, Number(b)||0), 0);
+    titik.push({ kunci: jamSemasa, label: labelJamCartaPentadbir(jamSemasa), jumlah, item: itemAkhir });
+  };
+
+  senarai.forEach(item => {
+    const jam = kunciJamCartaPentadbir(item);
+    if (jamSemasa && jam !== jamSemasa) simpanTitik();
+    jamSemasa = jam;
+    itemAkhir = item;
+    const lokasi = lokasiLaporanPengunjungPentadbir(item);
+    const nilai = nilaiJumlahPengunjungPentadbir(item);
+    if (item._manual) {
+      keadaan.set(lokasi, Math.max(0, (keadaan.get(lokasi) || 0) + nilai));
+      if (nilai < 0) keluarMengikutLokasi.set(lokasi, (keluarMengikutLokasi.get(lokasi) || 0) + Math.abs(nilai));
+    } else {
+      // Laporan berkala ialah SNAPSHOT semasa lokasi, bukan tambahan kepada laporan sebelumnya.
+      keadaan.set(lokasi, Math.max(0, nilai));
+    }
+  });
+  simpanTitik();
+  return { senarai, titik, keadaan, keluarMengikutLokasi };
+}
+
+function binaSnapshotKenderaanPentadbir() {
+  const senarai = senaraiKenderaanCartaPentadbir();
+  const keadaan = new Map();
+  const titik = [];
+  let jamSemasa = null;
+
+  const simpanTitik = () => {
+    if (!jamSemasa) return;
+    let bas=0, motokar=0, motosikal=0;
+    keadaan.forEach(v => { bas += v.bas; motokar += v.motokar; motosikal += v.motosikal; });
+    titik.push({ kunci: jamSemasa, label: labelJamCartaPentadbir(jamSemasa), bas, motokar, motosikal, jumlah: bas+motokar+motosikal });
+  };
+
+  senarai.forEach(item => {
+    const jam = kunciJamCartaPentadbir(item);
+    if (jamSemasa && jam !== jamSemasa) simpanTitik();
+    jamSemasa = jam;
+    const lokasi = lokasiLaporanKenderaanPentadbir(item);
+    const lama = keadaan.get(lokasi) || { bas:0, motokar:0, motosikal:0 };
+    const baru = {
+      bas: nilaiKenderaanDaripadaLaporanPentadbir(item,"BAS"),
+      motokar: nilaiKenderaanDaripadaLaporanPentadbir(item,"MOTOKAR"),
+      motosikal: nilaiKenderaanDaripadaLaporanPentadbir(item,"MOTOSIKAL")
+    };
+    if (item._manual) {
+      keadaan.set(lokasi, {
+        bas: Math.max(0, lama.bas + baru.bas),
+        motokar: Math.max(0, lama.motokar + baru.motokar),
+        motosikal: Math.max(0, lama.motosikal + baru.motosikal)
+      });
+    } else {
+      keadaan.set(lokasi, {
+        bas: Math.max(0, baru.bas), motokar: Math.max(0, baru.motokar), motosikal: Math.max(0, baru.motosikal)
+      });
+    }
+  });
+  simpanTitik();
+  return { senarai, titik, keadaan };
+}
+
 function ringkasanPengunjungMengikutLokasiPentadbir() {
-  const kumpulan = new Map();
-
-  senaraiPengunjungCartaPentadbir()
-    .forEach(item => {
-      const lokasi =
-        lokasiLaporanPengunjungPentadbir(item);
-
-      const jumlah =
-        nilaiJumlahPengunjungPentadbir(item);
-
-      const sediaAda =
-        kumpulan.get(lokasi) || {
-          lokasi,
-          datang: 0,
-          keluar: 0,
-          baki: 0,
-          bilLaporan: 0
-        };
-
-      /*
-        Nilai positif = pengunjung DATANG.
-        Nilai negatif = pengunjung KELUAR / BEREDAR KELUAR.
-        Untuk carta, nilai keluar disimpan sebagai nombor positif
-        supaya tiada lagi bar negatif pada paksi carta.
-      */
-      if (jumlah >= 0) {
-        sediaAda.datang += jumlah;
-      } else {
-        sediaAda.keluar += Math.abs(jumlah);
-      }
-
-      sediaAda.baki =
-        sediaAda.datang -
-        sediaAda.keluar;
-
-      sediaAda.bilLaporan += 1;
-
-      kumpulan.set(lokasi, sediaAda);
-    });
-
-  return Array
-    .from(kumpulan.values())
-    .sort(
-      (a, b) =>
-        b.datang - a.datang ||
-        b.keluar - a.keluar ||
-        a.lokasi.localeCompare(b.lokasi, "ms")
-    );
+  const { keadaan, keluarMengikutLokasi } = binaSnapshotPengunjungPentadbir();
+  return [...keadaan.entries()].map(([lokasi,baki]) => ({
+    lokasi,
+    datang: Math.max(0, baki),
+    keluar: keluarMengikutLokasi.get(lokasi) || 0,
+    baki: Math.max(0, baki),
+    bilLaporan: senaraiPengunjungCartaPentadbir().filter(i => lokasiLaporanPengunjungPentadbir(i) === lokasi).length
+  })).sort((a,b) => b.baki-a.baki || a.lokasi.localeCompare(b.lokasi,"ms"));
 }
 
 
@@ -9686,150 +9700,43 @@ function pilihRekodPengunjungPentadbir(index) {
 
 
 function paparCartaPengunjungPentadbir() {
-  const kanvas =
-    el("canvasCartaPengunjung");
-
+  const kanvas = el("canvasCartaPengunjung");
   if (!kanvas) return;
-
   binaPanelPengunjungPentadbir();
+  try { pastikanChartJsPentadbir(); } catch (_) { return; }
 
-  try {
-    pastikanChartJsPentadbir();
-  } catch (error) {
-    return;
-  }
+  const snapshot = binaSnapshotPengunjungPentadbir();
+  const labels = snapshot.titik.map(t => t.label);
+  const nilai = snapshot.titik.map(t => t.jumlah);
 
-  const senarai =
-    senaraiPengunjungCartaPentadbir();
-
-  const labels =
-    senarai.map(item =>
-      masaCartaLabel(item.tarikh_masa)
-    );
-
-  /*
-    Carta memaparkan JUMLAH TERKUMPUL.
-    Contoh laporan 500, 0, 250:
-    carta akan menjadi 500, 500, 750.
-  */
-  let jumlahTerkumpul = 0;
-
-  const nilai =
-    senarai.map(item => {
-      jumlahTerkumpul +=
-        nilaiJumlahPengunjungPentadbir(
-          item
-        );
-
-      return jumlahTerkumpul;
-    });
-
-  kemusnahkanCartaPentadbir(
-    cartaPengunjungPentadbir
-  );
-
-  cartaPengunjungPentadbir =
-    new Chart(kanvas, {
-      type: "line",
-
-      data: {
-        labels,
-        datasets: [
-          {
-            label: "Jumlah Keseluruhan Pengunjung",
-            data: nilai,
-            tension: 0.28,
-            fill: false,
-            pointRadius: 6,
-            pointHoverRadius: 9,
-            pointHitRadius: 18
-          }
-        ]
+  kemusnahkanCartaPentadbir(cartaPengunjungPentadbir);
+  cartaPengunjungPentadbir = new Chart(kanvas, {
+    type: "line",
+    data: { labels, datasets: [{
+      label: "Jumlah Pengunjung Semasa",
+      data: nilai, tension: 0.28, fill: false, pointRadius: 6, pointHoverRadius: 9, pointHitRadius: 18
+    }]},
+    options: {
+      ...pilihanCartaPentadbir("Jumlah Pengunjung Semasa"),
+      onClick(event) {
+        const elemen = cartaPengunjungPentadbir?.getElementsAtEventForMode(event,"nearest",{intersect:false,axis:"x"},true) || [];
+        if (!elemen.length) return;
+        const item = snapshot.titik[elemen[0].index]?.item;
+        const indeks = item ? snapshot.senarai.indexOf(item) : -1;
+        if (indeks >= 0) pilihRekodPengunjungPentadbir(indeks);
       },
-
-      options: {
-        ...pilihanCartaPentadbir(
-          "Jumlah Keseluruhan Pengunjung"
-        ),
-
-        onClick(event) {
-          const elemen =
-            cartaPengunjungPentadbir
-              ?.getElementsAtEventForMode(
-                event,
-                "nearest",
-                {
-                  intersect: false,
-                  axis: "x"
-                },
-                true
-              ) || [];
-
-          if (!elemen.length) return;
-
-          pilihRekodPengunjungPentadbir(
-            elemen[0].index
-          );
-        },
-
-        onHover(event) {
-          const sasaran =
-            event?.native?.target;
-
-          if (sasaran) {
-            sasaran.style.cursor =
-              "pointer";
-          }
-        },
-
-        plugins: {
-          ...pilihanCartaPentadbir(
-            "Jumlah Pengunjung"
-          ).plugins,
-
-          legend: {
-            labels: {
-              color: "#ffffff",
-              font: {
-                weight: "700"
-              }
-            }
-          },
-
-          tooltip: {
-            enabled: true,
-            callbacks: {
-              label(context) {
-                return `Jumlah Keseluruhan: ${(Number(context.raw) || 0).toLocaleString("ms-MY")} pengunjung`;
-              },
-
-              afterLabel(context) {
-                const item =
-                  senarai[context.dataIndex];
-
-                const nilaiLaporan =
-                  item
-                    ? nilaiJumlahPengunjungPentadbir(item)
-                    : 0;
-
-                return [
-                  `Laporan ini: ${Number(nilaiLaporan || 0).toLocaleString("ms-MY")} pengunjung`,
-                  "Klik untuk sorot butiran di sebelah kanan"
-                ];
-              }
-            }
-          }
-        }
+      onHover(event) { const sasaran=event?.native?.target; if(sasaran) sasaran.style.cursor="pointer"; },
+      plugins: {
+        ...pilihanCartaPentadbir("Jumlah Pengunjung Semasa").plugins,
+        legend:{labels:{color:"#ffffff",font:{weight:"700"}}},
+        tooltip:{enabled:true,callbacks:{
+          label(context){ return `Jumlah semasa: ${(Number(context.raw)||0).toLocaleString("ms-MY")} pengunjung`; },
+          afterLabel(){ return ["Bacaan snapshot setiap jam — bukan jumlah terkumpul."]; }
+        }}
       }
-    });
-
-  /*
-    Paparkan kedua-dua perspektif:
-    1. Trend jumlah terkumpul mengikut masa.
-    2. Jumlah pengunjung mengikut lokasi.
-  */
+    }
+  });
   paparCartaPengunjungLokasiPentadbir();
-
   paparButiranPengunjungPentadbir();
 }
 
@@ -9943,61 +9850,15 @@ function lokasiLaporanKenderaanPentadbir(item) {
 
 
 function ringkasanKenderaanMengikutLokasiPentadbir() {
-  const kumpulan = new Map();
-
-  senaraiKenderaanCartaPentadbir()
-    .forEach(item => {
-      const lokasi =
-        lokasiLaporanKenderaanPentadbir(item);
-
-      const bas =
-        nilaiKenderaanDaripadaLaporanPentadbir(item, "BAS");
-
-      const motokar =
-        nilaiKenderaanDaripadaLaporanPentadbir(item, "MOTOKAR");
-
-      const motosikal =
-        nilaiKenderaanDaripadaLaporanPentadbir(item, "MOTOSIKAL");
-
-      const jumlah =
-        jumlahKeseluruhanKenderaanLaporanPentadbir(item);
-
-      const sediaAda =
-        kumpulan.get(lokasi) || {
-          lokasi,
-          bas: 0,
-          motokar: 0,
-          motosikal: 0,
-          jumlah: 0,
-          bilLaporan: 0
-        };
-
-      /*
-        Hanya rekod KENDERAAN DATANG (+) dipaparkan.
-        Pecahan BAS, MOTOKAR dan MOTOSIKAL dikekalkan.
-        Rekod keluar (-) masih kekal dalam data tetapi
-        tidak dimasukkan ke carta KENDERAAN MENGIKUT LOKASI.
-      */
-      if (jumlah >= 0) {
-        sediaAda.bas += Math.max(0, bas);
-        sediaAda.motokar += Math.max(0, motokar);
-        sediaAda.motosikal += Math.max(0, motosikal);
-        sediaAda.jumlah += Math.max(0, bas) +
-                           Math.max(0, motokar) +
-                           Math.max(0, motosikal);
-      }
-
-      sediaAda.bilLaporan += 1;
-      kumpulan.set(lokasi, sediaAda);
-    });
-
-  return Array
-    .from(kumpulan.values())
-    .sort(
-      (a, b) =>
-        b.jumlah - a.jumlah ||
-        a.lokasi.localeCompare(b.lokasi, "ms")
-    );
+  const { keadaan } = binaSnapshotKenderaanPentadbir();
+  return [...keadaan.entries()].map(([lokasi,v]) => ({
+    lokasi,
+    bas: v.bas,
+    motosikal: v.motosikal,
+    motokar: v.motokar,
+    jumlah: v.bas + v.motosikal + v.motokar,
+    bilLaporan: senaraiKenderaanCartaPentadbir().filter(i => lokasiLaporanKenderaanPentadbir(i) === lokasi).length
+  })).sort((a,b) => b.jumlah-a.jumlah || a.lokasi.localeCompare(b.lokasi,"ms"));
 }
 
 
@@ -10525,165 +10386,39 @@ function paparCartaKenderaanLokasiPentadbir() {
 
 
 function paparCartaKenderaanPentadbir() {
-  const kanvas =
-    el("canvasCartaKenderaan");
-
+  const kanvas = el("canvasCartaKenderaan");
   if (!kanvas) return;
+  try { pastikanChartJsPentadbir(); } catch (_) { return; }
 
-  try {
-    pastikanChartJsPentadbir();
-  } catch (_) {
-    return;
-  }
+  const snapshot = binaSnapshotKenderaanPentadbir();
+  const labels = snapshot.titik.map(t => t.label);
+  const dataBas = snapshot.titik.map(t => t.bas);
+  const dataMotokar = snapshot.titik.map(t => t.motokar);
+  const dataMotosikal = snapshot.titik.map(t => t.motosikal);
 
-  const senarai =
-    senaraiKenderaanCartaPentadbir();
-
-  const labels =
-    senarai.map(item =>
-      formatMasaPendekCartaPentadbir(
-        item.tarikh_masa
-      )
-    );
-
-  let jumlahBas = 0;
-  let jumlahMotokar = 0;
-  let jumlahMotosikal = 0;
-
-  const dataBas = [];
-  const dataMotokar = [];
-  const dataMotosikal = [];
-
-  senarai.forEach(item => {
-    jumlahBas +=
-      nilaiKenderaanDaripadaLaporanPentadbir(
-        item,
-        "BAS"
-      );
-
-    jumlahMotokar +=
-      nilaiKenderaanDaripadaLaporanPentadbir(
-        item,
-        "MOTOKAR"
-      );
-
-    jumlahMotosikal +=
-      nilaiKenderaanDaripadaLaporanPentadbir(
-        item,
-        "MOTOSIKAL"
-      );
-
-    dataBas.push(jumlahBas);
-    dataMotokar.push(jumlahMotokar);
-    dataMotosikal.push(jumlahMotosikal);
-  });
-
-  kemusnahkanCartaPentadbir(
-    cartaKenderaanPentadbir
-  );
-
-  cartaKenderaanPentadbir =
-    new Chart(
-      kanvas,
-      {
-        type: "line",
-
-        data: {
-          labels,
-
-          datasets: [
-            {
-              label: "Bas",
-              data: dataBas,
-              tension: .28,
-              pointRadius: 4,
-              pointHoverRadius: 6,
-              borderWidth: 3,
-              fill: false
-            },
-            {
-              label: "Motokar",
-              data: dataMotokar,
-              tension: .28,
-              pointRadius: 4,
-              pointHoverRadius: 6,
-              borderWidth: 3,
-              fill: false
-            },
-            {
-              label: "Motosikal",
-              data: dataMotosikal,
-              tension: .28,
-              pointRadius: 4,
-              pointHoverRadius: 6,
-              borderWidth: 3,
-              fill: false
-            }
-          ]
-        },
-
-        options: {
-          ...pilihanCartaPentadbir(
-            "Jumlah Kenderaan"
-          ),
-
-          interaction: {
-            mode: "index",
-            intersect: false
-          },
-
-          plugins: {
-            ...pilihanCartaPentadbir(
-              "Jumlah Kenderaan"
-            ).plugins,
-
-            legend: {
-              display: true,
-              labels: {
-                color: "#ffffff",
-                font: {
-                  weight: "700"
-                }
-              }
-            },
-
-            tooltip: {
-              callbacks: {
-                footer(context) {
-                  if (!context?.length) return "";
-
-                  const indeks =
-                    context[0].dataIndex;
-
-                  const bas =
-                    Number(
-                      dataBas[indeks] || 0
-                    );
-
-                  const motokar =
-                    Number(
-                      dataMotokar[indeks] || 0
-                    );
-
-                  const motosikal =
-                    Number(
-                      dataMotosikal[indeks] || 0
-                    );
-
-                  return (
-                    `JUMLAH TERKUMPUL: ` +
-                    `${(bas + motokar + motosikal).toLocaleString("ms-MY")} KENDERAAN`
-                  );
-                }
-              }
-            }
-          }
-        }
+  kemusnahkanCartaPentadbir(cartaKenderaanPentadbir);
+  cartaKenderaanPentadbir = new Chart(kanvas, {
+    type:"line",
+    data:{labels,datasets:[
+      {label:"Bas",data:dataBas,tension:.28,pointRadius:4,pointHoverRadius:6,borderWidth:3,fill:false},
+      {label:"Motokar",data:dataMotokar,tension:.28,pointRadius:4,pointHoverRadius:6,borderWidth:3,fill:false},
+      {label:"Motosikal",data:dataMotosikal,tension:.28,pointRadius:4,pointHoverRadius:6,borderWidth:3,fill:false}
+    ]},
+    options:{
+      ...pilihanCartaPentadbir("Jumlah Kenderaan Semasa"),
+      interaction:{mode:"index",intersect:false},
+      plugins:{
+        ...pilihanCartaPentadbir("Jumlah Kenderaan Semasa").plugins,
+        legend:{display:true,labels:{color:"#ffffff",font:{weight:"700"}}},
+        tooltip:{callbacks:{footer(context){
+          if(!context?.length) return "";
+          const t=snapshot.titik[context[0].dataIndex];
+          return `JUMLAH SEMASA: ${Number(t?.jumlah||0).toLocaleString("ms-MY")} KENDERAAN`;
+        }}}
       }
-    );
-
+    }
+  });
   paparCartaKenderaanLokasiPentadbir();
-
   paparButiranKenderaanPentadbir();
 }
 
@@ -14281,41 +14016,17 @@ function tutupLaporanKeseluruhanHarian() {
 }
 
 function statistikPengunjungLaporanHarian() {
-  const senarai = senaraiPengunjungCartaPentadbir();
-  let semasa = 0;
-  let tertinggi = 0;
-
-  senarai.forEach(item => {
-    semasa += nilaiJumlahPengunjungPentadbir(item);
-    tertinggi = Math.max(tertinggi, semasa);
-  });
-
-  return {
-    keseluruhan: Math.max(0, tertinggi),
-    terkini: Math.max(0, semasa)
-  };
+  const titik = binaSnapshotPengunjungPentadbir().titik;
+  const terkini = titik.length ? titik[titik.length - 1].jumlah : 0;
+  const tertinggi = titik.reduce((maks,t) => Math.max(maks,t.jumlah),0);
+  return { keseluruhan: Math.max(0,tertinggi), terkini: Math.max(0,terkini) };
 }
 
 function statistikKenderaanLaporanHarian() {
-  const senarai = senaraiKenderaanCartaPentadbir();
-  let bas = 0;
-  let motokar = 0;
-  let motosikal = 0;
-  let tertinggi = 0;
-
-  senarai.forEach(item => {
-    bas += nilaiKenderaanDaripadaLaporanPentadbir(item, "BAS");
-    motokar += nilaiKenderaanDaripadaLaporanPentadbir(item, "MOTOKAR");
-    motosikal += nilaiKenderaanDaripadaLaporanPentadbir(item, "MOTOSIKAL");
-
-    const jumlahSemasa = bas + motokar + motosikal;
-    tertinggi = Math.max(tertinggi, jumlahSemasa);
-  });
-
-  return {
-    keseluruhan: Math.max(0, tertinggi),
-    terkini: Math.max(0, bas + motokar + motosikal)
-  };
+  const titik = binaSnapshotKenderaanPentadbir().titik;
+  const terkini = titik.length ? titik[titik.length - 1].jumlah : 0;
+  const tertinggi = titik.reduce((maks,t) => Math.max(maks,t.jumlah),0);
+  return { keseluruhan: Math.max(0,tertinggi), terkini: Math.max(0,terkini) };
 }
 
 function binaRingkasanLaporanHarian() {
