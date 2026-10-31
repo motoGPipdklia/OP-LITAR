@@ -1,6 +1,6 @@
 "use strict";
 
-/* SKPO OP LITAR BUILD: 20261031-LOCATION-INOUT-003 */
+/* SKPO OP LITAR BUILD: 20261031-LOCATION-PEAK-005 */
 
 /* ================================================================
    SKPO FORMULA 1 — PENTADBIR
@@ -9119,22 +9119,14 @@ function ringkasanPengunjungMengikutLokasiPentadbir() {
   const { keadaan, keluarMengikutLokasi } = binaSnapshotPengunjungPentadbir();
   return [...keadaan.entries()].map(([lokasi,baki]) => {
     const keluar = Math.max(0, keluarMengikutLokasi.get(lokasi) || 0);
-    const bakiSemasa = Math.max(0, Number(baki) || 0);
-
-    /*
-      PECAHAN LOKASI:
-      - BAKI SEMASA sudah mengambil kira rekod PENGUNJUNG BEREDAR KELUAR.
-      - PENGUNJUNG DATANG perlu menunjukkan jumlah asal yang telah datang,
-        iaitu BAKI SEMASA + PENGUNJUNG KELUAR.
-      - Dengan itu DATANG dan KELUAR menggunakan asas yang sama dan
-        apabila semua pengunjung sudah keluar, kedua-dua bar akan sama.
-    */
-    const datang = bakiSemasa + keluar;
+    const bakiSemasa = Math.max(0, baki);
 
     return {
       lokasi,
-      datang,
-      keluar: Math.min(keluar, datang),
+      // DATANG ialah jumlah asal yang berada di lokasi sebelum rekod keluar ditolak.
+      datang: bakiSemasa + keluar,
+      keluar,
+      // BAKI kekal snapshot semasa dan digunakan untuk JUMLAH KESELURUHAN lokasi.
       baki: bakiSemasa,
       bilLaporan: senaraiPengunjungCartaPentadbir().filter(i => lokasiLaporanPengunjungPentadbir(i) === lokasi).length
     };
@@ -9205,23 +9197,35 @@ function paparCartaPengunjungLokasiPentadbir() {
     Jangan tolak jumlahKeluar kali kedua.
   */
   const bakiKeseluruhan =
-    Math.max(0, jumlahDatang);
+    ringkasan.reduce(
+      (jumlah, item) => jumlah + Math.max(0, item.baki),
+      0
+    );
 
   /*
-    Kekalkan kotak JUMLAH KESELURUHAN sedia ada sebagai baki semasa.
-    Carta di bawah pula membezakan DATANG dan KELUAR.
+    FIX LOCATION-PEAK-005:
+    JUMLAH KESELURUHAN ialah nilai TERTINGGI (PEAK) sepanjang hari,
+    sama seperti Laporan Keseluruhan Harian. Baki semasa kekal digunakan
+    untuk snapshot/graf utama dan bar lokasi kekal DATANG vs KELUAR.
   */
+  const titikPengunjung = binaSnapshotPengunjungPentadbir().titik;
+  const jumlahTertinggi = titikPengunjung.reduce(
+    (maks, titik) => Math.max(maks, Number(titik.jumlah) || 0),
+    0
+  );
+
   const jumlahBox =
     el("jumlahKeseluruhanPengunjungLokasiPentadbir");
 
   if (jumlahBox) {
     jumlahBox.textContent =
-      bakiKeseluruhan.toLocaleString("ms-MY");
+      jumlahTertinggi.toLocaleString("ms-MY");
 
     jumlahBox.title =
+      `Jumlah tertinggi: ${jumlahTertinggi.toLocaleString("ms-MY")} | ` +
       `Datang: ${jumlahDatang.toLocaleString("ms-MY")} | ` +
       `Keluar: ${jumlahKeluar.toLocaleString("ms-MY")} | ` +
-      `Baki: ${bakiKeseluruhan.toLocaleString("ms-MY")}`;
+      `Baki semasa: ${bakiKeseluruhan.toLocaleString("ms-MY")}`;
   }
 
   kemusnahkanCartaPentadbir(
@@ -10348,12 +10352,16 @@ function paparCartaKenderaanLokasiPentadbir() {
       item => item.motosikal
     );
 
-  const jumlahKeseluruhan =
-    ringkasan.reduce(
-      (jumlah, item) =>
-        jumlah + item.jumlah,
-      0
-    );
+  /*
+    FIX LOCATION-PEAK-005:
+    JUMLAH KESELURUHAN KENDERAAN juga ialah nilai TERTINGGI (PEAK)
+    sepanjang hari supaya sama dengan Laporan Keseluruhan Harian.
+  */
+  const titikKenderaan = binaSnapshotKenderaanPentadbir().titik;
+  const jumlahKeseluruhan = titikKenderaan.reduce(
+    (maks, titik) => Math.max(maks, Number(titik.jumlah) || 0),
+    0
+  );
 
   if (
     el(
