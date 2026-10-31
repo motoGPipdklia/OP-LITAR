@@ -1,6 +1,6 @@
 "use strict";
 
-/* SKPO OP LITAR BUILD: 20261031-SNAPSHOT-SYNC-002 */
+/* SKPO OP LITAR BUILD: 20261031-LOCATION-INOUT-003 */
 
 /* ================================================================
    SKPO FORMULA 1 — PENTADBIR
@@ -9117,13 +9117,28 @@ function binaSnapshotKenderaanPentadbir() {
 
 function ringkasanPengunjungMengikutLokasiPentadbir() {
   const { keadaan, keluarMengikutLokasi } = binaSnapshotPengunjungPentadbir();
-  return [...keadaan.entries()].map(([lokasi,baki]) => ({
-    lokasi,
-    datang: Math.max(0, baki),
-    keluar: keluarMengikutLokasi.get(lokasi) || 0,
-    baki: Math.max(0, baki),
-    bilLaporan: senaraiPengunjungCartaPentadbir().filter(i => lokasiLaporanPengunjungPentadbir(i) === lokasi).length
-  })).sort((a,b) => b.baki-a.baki || a.lokasi.localeCompare(b.lokasi,"ms"));
+  return [...keadaan.entries()].map(([lokasi,baki]) => {
+    const keluar = Math.max(0, keluarMengikutLokasi.get(lokasi) || 0);
+    const bakiSemasa = Math.max(0, Number(baki) || 0);
+
+    /*
+      PECAHAN LOKASI:
+      - BAKI SEMASA sudah mengambil kira rekod PENGUNJUNG BEREDAR KELUAR.
+      - PENGUNJUNG DATANG perlu menunjukkan jumlah asal yang telah datang,
+        iaitu BAKI SEMASA + PENGUNJUNG KELUAR.
+      - Dengan itu DATANG dan KELUAR menggunakan asas yang sama dan
+        apabila semua pengunjung sudah keluar, kedua-dua bar akan sama.
+    */
+    const datang = bakiSemasa + keluar;
+
+    return {
+      lokasi,
+      datang,
+      keluar: Math.min(keluar, datang),
+      baki: bakiSemasa,
+      bilLaporan: senaraiPengunjungCartaPentadbir().filter(i => lokasiLaporanPengunjungPentadbir(i) === lokasi).length
+    };
+  }).sort((a,b) => b.baki-a.baki || a.lokasi.localeCompare(b.lokasi,"ms"));
 }
 
 
